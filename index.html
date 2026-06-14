@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1B64A8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="스타리아 차량일지" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <title>스타리아 차량일지</title>
+  <style>
+    :root {
+      --primary:#1B64A8;
+      --primary-dark:#104E85;
+      --primary-bg:#E3EEF9;
+      --accent:#2A7D3F;
+      --accent-bg:#DFF2E4;
+      --warn:#C0392B;
+      --warn-bg:#FCEBEB;
+      --border:#D3D1C7;
+      --bg:#EFEDE6;
+      --surface:#FFFFFF;
+      --text:#111110;
+      --muted:#555550;
+      --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html { -webkit-text-size-adjust:100%; }
+    body {
+      font-family:-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.45;
+      padding-bottom:32px;
+    }
+    .header {
+      background:linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color:white;
+      padding:24px 20px 28px;
+      border-bottom-left-radius:24px;
+      border-bottom-right-radius:24px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.12);
+    }
+    .eyebrow { font-size:15px; opacity:.9; font-weight:700; letter-spacing:.04em; }
+    .title { font-size:32px; font-weight:900; margin-top:6px; }
+    .sub { font-size:16px; opacity:.88; margin-top:6px; font-weight:600; }
+    .vehicle-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      margin-top:16px; padding:10px 14px;
+      background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28);
+      border-radius:999px; font-size:16px; font-weight:800;
+    }
+    .wrap { padding:16px; max-width:720px; margin:0 auto; }
+    .notice {
+      background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+      padding:16px; margin:16px 0; color:var(--muted); font-size:15px; font-weight:600;
+    }
+    .card {
+      background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+      padding:18px; margin-bottom:14px; box-shadow:0 1px 0 rgba(0,0,0,.03);
+    }
+    .card-title { font-size:20px; font-weight:900; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+    .grid { display:grid; grid-template-columns:1fr; gap:12px; }
+    @media (min-width:640px) { .grid.two { grid-template-columns:1fr 1fr; } }
+    label { display:block; font-size:14px; color:var(--muted); font-weight:800; margin-bottom:6px; }
+    input, select, textarea {
+      width:100%; border:2px solid var(--border); border-radius:14px;
+      padding:14px 13px; font-size:18px; font-weight:700; color:var(--text);
+      background:#fff; outline:none;
+    }
+    textarea { min-height:92px; resize:vertical; font-size:17px; }
+    input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-bg); }
+    .required::after { content:' *'; color:var(--warn); }
+    .pill-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill {
+      border:2px solid var(--border); background:white; border-radius:999px;
+      padding:11px 14px; font-size:16px; font-weight:800; cursor:pointer;
+    }
+    .pill.active { border-color:var(--primary); color:var(--primary); background:var(--primary-bg); }
+    .fuel-area { display:none; }
+    .fuel-area.show { display:block; }
+    .submit {
+      width:100%; border:none; border-radius:16px; padding:18px 18px;
+      background:var(--primary); color:white; font-size:22px; font-weight:900;
+      box-shadow:0 4px 16px rgba(27,100,168,.28); cursor:pointer;
+    }
+    .submit:active { transform:scale(.99); }
+    .submit:disabled { background:#c7c4ba; color:#918e84; box-shadow:none; }
+    .small-btn {
+      border:1px solid var(--border); background:white; color:var(--muted); border-radius:999px;
+      padding:9px 12px; font-size:14px; font-weight:800; cursor:pointer;
+    }
+    .row-between { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .toast {
+      position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
+      background:#161616; color:white; padding:14px 18px; border-radius:999px;
+      font-size:16px; font-weight:800; opacity:0; transition:.22s; z-index:99; white-space:nowrap;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .hidden-frame { display:none; }
+    .hint { margin-top:6px; color:var(--muted); font-size:13px; font-weight:600; }
+    .danger { color:var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="eyebrow">업무차량 운행기록</div>
+    <div class="title">스타리아 차량일지</div>
+    <div class="sub">사용자·업무목적·주유비 상신용 기록</div>
+    <div class="vehicle-badge">🚐 차량: STARIA-01</div>
+  </div>
+
+  <div class="wrap">
+    <div class="notice">
+      이 화면은 스타리아 차량 전용 출입구입니다. 실제 이동동선은 별도 GPS 시스템으로 확인하고, 이 화면에는 <b>사용자·업무목적·주유 여부·출력용 운행정보</b>를 남깁니다.
+    </div>
+
+    <form id="logForm" method="POST" target="submitFrame">
+      <input type="hidden" name="action" value="saveStariaLog" />
+      <input type="hidden" name="vehicle_id" value="STARIA_01" />
+      <input type="hidden" name="vehicle_name" value="스타리아" />
+      <input type="hidden" name="source" value="github-pages" />
+
+      <div class="card">
+        <div class="card-title">1. 사용자 정보</div>
+        <div class="grid two">
+          <div>
+            <label class="required" for="user_name">사용자명</label>
+            <input id="user_name" name="user_name" type="text" autocomplete="name" placeholder="예: 최관영" required />
+          </div>
+          <div>
+            <label for="user_team">소속/구분</label>
+            <input id="user_team" name="user_team" type="text" placeholder="예: 화성지역 / 야간 / 지원" />
+          </div>
+        </div>
+        <div class="hint">자주 쓰는 사용자명은 해당 기기에 자동 기억됩니다.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">2. 운행 시간</div>
+        <div class="grid two">
+          <div>
+            <div class="row-between">
+              <label class="required" for="start_at">사용 시작</label>
+              <button type="button" class="small-btn" onclick="setNow('start_at')">현재시간</button>
+            </div>
+            <input id="start_at" name="start_at" type="datetime-local" required />
+          </div>
+          <div>
+            <div class="row-between">
+              <label class="required" for="end_at">사용 종료</label>
+              <button type="button" class="small-btn" onclick="setNow('end_at')">현재시간</button>
+            </div>
+            <input id="end_at" name="end_at" type="datetime-local" required />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">3. 업무 내용</div>
+        <div class="grid">
+          <div>
+            <label class="required" for="purpose">사용 목적</label>
+            <select id="purpose" name="purpose" required>
+              <option value="">선택하세요</option>
+              <option value="업무지원">업무지원</option>
+              <option value="회의/협의">회의/협의</option>
+              <option value="식자재/비품 이동">식자재/비품 이동</option>
+              <option value="구입/수령">구입/수령</option>
+              <option value="주유">주유</option>
+              <option value="세차/정비">세차/정비</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div>
+            <label class="required" for="destination">방문지/업무구역</label>
+            <input id="destination" name="destination" type="text" placeholder="예: 16L, H1, 외부업체, 주유소" required />
+          </div>
+          <div>
+            <label for="purpose_detail">상세 내용</label>
+            <textarea id="purpose_detail" name="purpose_detail" placeholder="예: 행사 물품 이동, 회의 참석, 주유비 상신 대상 등"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">4. 주행/주유 정보</div>
+        <div class="grid two">
+          <div>
+            <label for="odometer_start">출발 km</label>
+            <input id="odometer_start" name="odometer_start" type="number" inputmode="decimal" step="0.1" placeholder="선택 입력" oninput="calcDistance()" />
+          </div>
+          <div>
+            <label for="odometer_end">복귀 km</label>
+            <input id="odometer_end" name="odometer_end" type="number" inputmode="decimal" step="0.1" placeholder="선택 입력" oninput="calcDistance()" />
+          </div>
+        </div>
+        <input id="distance_km" name="distance_km" type="hidden" />
+        <div class="hint" id="distanceHint">주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.</div>
+
+        <div style="height:14px"></div>
+        <label>주유 여부</label>
+        <div class="pill-row">
+          <button type="button" class="pill active" data-fuel="N" onclick="setFuel('N', this)">주유 없음</button>
+          <button type="button" class="pill" data-fuel="Y" onclick="setFuel('Y', this)">주유 있음</button>
+        </div>
+        <input type="hidden" id="fuel_yn" name="fuel_yn" value="N" />
+
+        <div id="fuelArea" class="fuel-area">
+          <div style="height:12px"></div>
+          <div class="grid two">
+            <div>
+              <label for="fuel_amount">주유 금액</label>
+              <input id="fuel_amount" name="fuel_amount" type="number" inputmode="numeric" placeholder="예: 80000" />
+            </div>
+            <div>
+              <label for="fuel_station">주유소</label>
+              <input id="fuel_station" name="fuel_station" type="text" placeholder="예: ○○주유소" />
+            </div>
+          </div>
+          <div style="height:12px"></div>
+          <div>
+            <label for="receipt_memo">영수증/상신 메모</label>
+            <input id="receipt_memo" name="receipt_memo" type="text" placeholder="예: 영수증 보관, 법인카드 사용 등" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">5. 특이사항</div>
+        <textarea id="note" name="note" placeholder="차량 이상, 정비 필요, 반납 특이사항 등을 입력하세요"></textarea>
+      </div>
+
+      <button id="submitBtn" type="submit" class="submit">운행일지 저장</button>
+      <div class="hint danger" style="text-align:center;margin-top:10px;">저장 후 Google Sheets에 기록됩니다. 중복 저장되지 않도록 버튼은 1회만 누르세요.</div>
+    </form>
+  </div>
+
+  <iframe class="hidden-frame" id="submitFrame" name="submitFrame"></iframe>
+  <div class="toast" id="toast"></div>
+
+<script>
+  // 1) GAS 웹앱 배포 URL을 여기에 넣으세요.
+  // 예: https://script.google.com/macros/s/AKfycb.../exec
+  const GAS_ENDPOINT = 'PASTE_GAS_WEBAPP_EXEC_URL_HERE';
+
+  const form = document.getElementById('logForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  window.addEventListener('load', () => {
+    form.action = GAS_ENDPOINT;
+    setDefaultTimes();
+    restoreUser();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    if (!GAS_ENDPOINT || GAS_ENDPOINT.includes('PASTE_GAS')) {
+      e.preventDefault();
+      showToast('GAS 주소가 설정되지 않았습니다');
+      return;
+    }
+
+    const start = document.getElementById('start_at').value;
+    const end = document.getElementById('end_at').value;
+    if (start && end && new Date(end) < new Date(start)) {
+      e.preventDefault();
+      showToast('종료시간이 시작시간보다 빠릅니다');
+      return;
+    }
+
+    const userName = document.getElementById('user_name').value.trim();
+    const userTeam = document.getElementById('user_team').value.trim();
+    localStorage.setItem('staria_user_name', userName);
+    localStorage.setItem('staria_user_team', userTeam);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '저장 중...';
+
+    setTimeout(() => {
+      showToast('저장 요청 완료');
+      submitBtn.textContent = '운행일지 저장';
+      submitBtn.disabled = false;
+      clearAfterSubmit();
+    }, 1600);
+  });
+
+  function setDefaultTimes() {
+    const now = new Date();
+    const end = toLocalDatetimeValue(now);
+    const startDate = new Date(now.getTime() - 60 * 60 * 1000);
+    document.getElementById('start_at').value = toLocalDatetimeValue(startDate);
+    document.getElementById('end_at').value = end;
+  }
+
+  function setNow(id) {
+    document.getElementById(id).value = toLocalDatetimeValue(new Date());
+  }
+
+  function toLocalDatetimeValue(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function restoreUser() {
+    const name = localStorage.getItem('staria_user_name') || '';
+    const team = localStorage.getItem('staria_user_team') || '';
+    document.getElementById('user_name').value = name;
+    document.getElementById('user_team').value = team;
+  }
+
+  function setFuel(value, el) {
+    document.getElementById('fuel_yn').value = value;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('fuelArea').classList.toggle('show', value === 'Y');
+  }
+
+  function calcDistance() {
+    const s = parseFloat(document.getElementById('odometer_start').value);
+    const e = parseFloat(document.getElementById('odometer_end').value);
+    const hidden = document.getElementById('distance_km');
+    const hint = document.getElementById('distanceHint');
+    if (!isNaN(s) && !isNaN(e) && e >= s) {
+      const d = Math.round((e - s) * 10) / 10;
+      hidden.value = d;
+      hint.textContent = `계산 주행거리: ${d} km`;
+    } else {
+      hidden.value = '';
+      hint.textContent = '주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.';
+    }
+  }
+
+  function clearAfterSubmit() {
+    document.getElementById('purpose').value = '';
+    document.getElementById('destination').value = '';
+    document.getElementById('purpose_detail').value = '';
+    document.getElementById('odometer_start').value = '';
+    document.getElementById('odometer_end').value = '';
+    document.getElementById('distance_km').value = '';
+    document.getElementById('fuel_amount').value = '';
+    document.getElementById('fuel_station').value = '';
+    document.getElementById('receipt_memo').value = '';
+    document.getElementById('note').value = '';
+    document.getElementById('distanceHint').textContent = '주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.';
+    setDefaultTimes();
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
