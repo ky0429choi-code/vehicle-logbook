@@ -1,359 +1,871 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1B64A8" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="스타리아 차량일지" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <title>스타리아 차량일지</title>
-  <style>
-    :root {
-      --primary:#1B64A8;
-      --primary-dark:#104E85;
-      --primary-bg:#E3EEF9;
-      --accent:#2A7D3F;
-      --accent-bg:#DFF2E4;
-      --warn:#C0392B;
-      --warn-bg:#FCEBEB;
-      --border:#D3D1C7;
-      --bg:#EFEDE6;
-      --surface:#FFFFFF;
-      --text:#111110;
-      --muted:#555550;
-      --radius:16px;
-    }
-    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-    html { -webkit-text-size-adjust:100%; }
-    body {
-      font-family:-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-      background:var(--bg);
-      color:var(--text);
-      line-height:1.45;
-      padding-bottom:32px;
-    }
-    .header {
-      background:linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color:white;
-      padding:24px 20px 28px;
-      border-bottom-left-radius:24px;
-      border-bottom-right-radius:24px;
-      box-shadow:0 4px 20px rgba(0,0,0,0.12);
-    }
-    .eyebrow { font-size:15px; opacity:.9; font-weight:700; letter-spacing:.04em; }
-    .title { font-size:32px; font-weight:900; margin-top:6px; }
-    .sub { font-size:16px; opacity:.88; margin-top:6px; font-weight:600; }
-    .vehicle-badge {
-      display:inline-flex; align-items:center; gap:8px;
-      margin-top:16px; padding:10px 14px;
-      background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28);
-      border-radius:999px; font-size:16px; font-weight:800;
-    }
-    .wrap { padding:16px; max-width:720px; margin:0 auto; }
-    .notice {
-      background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-      padding:16px; margin:16px 0; color:var(--muted); font-size:15px; font-weight:600;
-    }
-    .card {
-      background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-      padding:18px; margin-bottom:14px; box-shadow:0 1px 0 rgba(0,0,0,.03);
-    }
-    .card-title { font-size:20px; font-weight:900; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-    .grid { display:grid; grid-template-columns:1fr; gap:12px; }
-    @media (min-width:640px) { .grid.two { grid-template-columns:1fr 1fr; } }
-    label { display:block; font-size:14px; color:var(--muted); font-weight:800; margin-bottom:6px; }
-    input, select, textarea {
-      width:100%; border:2px solid var(--border); border-radius:14px;
-      padding:14px 13px; font-size:18px; font-weight:700; color:var(--text);
-      background:#fff; outline:none;
-    }
-    textarea { min-height:92px; resize:vertical; font-size:17px; }
-    input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-bg); }
-    .required::after { content:' *'; color:var(--warn); }
-    .pill-row { display:flex; gap:8px; flex-wrap:wrap; }
-    .pill {
-      border:2px solid var(--border); background:white; border-radius:999px;
-      padding:11px 14px; font-size:16px; font-weight:800; cursor:pointer;
-    }
-    .pill.active { border-color:var(--primary); color:var(--primary); background:var(--primary-bg); }
-    .fuel-area { display:none; }
-    .fuel-area.show { display:block; }
-    .submit {
-      width:100%; border:none; border-radius:16px; padding:18px 18px;
-      background:var(--primary); color:white; font-size:22px; font-weight:900;
-      box-shadow:0 4px 16px rgba(27,100,168,.28); cursor:pointer;
-    }
-    .submit:active { transform:scale(.99); }
-    .submit:disabled { background:#c7c4ba; color:#918e84; box-shadow:none; }
-    .small-btn {
-      border:1px solid var(--border); background:white; color:var(--muted); border-radius:999px;
-      padding:9px 12px; font-size:14px; font-weight:800; cursor:pointer;
-    }
-    .row-between { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-    .toast {
-      position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(20px);
-      background:#161616; color:white; padding:14px 18px; border-radius:999px;
-      font-size:16px; font-weight:800; opacity:0; transition:.22s; z-index:99; white-space:nowrap;
-    }
-    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    .hidden-frame { display:none; }
-    .hint { margin-top:6px; color:var(--muted); font-size:13px; font-weight:600; }
-    .danger { color:var(--warn); }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1B64A8">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="icon" href="./assets/icon-192.png">
+<title>차량일지</title>
+
+<style>
+  :root {
+    --primary:    #1B64A8;
+    --primary-bg: #E3EEF9;
+    --accent:     #2A7D3F;
+    --accent-bg:  #DFF2E4;
+    --warn:       #C0392B;
+    --gray:       #5F5E5A;
+    --gray-bg:    #F1EFE8;
+    --border:     #D3D1C7;
+    --bg:         #EFEDE6;
+    --surface:    #FFFFFF;
+    --text:       #111110;
+    --muted:      #555550;
+    --radius:     16px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 100px;
+    line-height: 1.4;
+  }
+
+  .header {
+    background: var(--primary);
+    color: white;
+    padding: 24px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .app-logo {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.18);
+    object-fit: contain;
+  }
+
+  .header-title {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .header-date {
+    font-size: 28px;
+    font-weight: 700;
+    opacity: 0.88;
+  }
+
+  .vehicle-strip {
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 14px 20px;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+  }
+
+  .vehicle-strip span {
+    color: var(--muted);
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 3px solid var(--border);
+  }
+
+  .tab {
+    flex: 1;
+    padding: 20px;
+    text-align: center;
+    font-size: 34px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 4px solid transparent;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 800;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .step-card {
+    background: var(--surface);
+    margin: 16px 14px 0;
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    border: 1px solid var(--border);
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .step-num {
+    background: var(--primary);
+    color: white;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .step-num.green { background: var(--accent); }
+
+  .step-title {
+    font-size: 38px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .step-selected {
+    margin-left: auto;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-bg);
+    padding: 6px 18px;
+    border-radius: 99px;
+  }
+
+  .step-selected.green {
+    color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  .region-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .region-tab {
+    padding: 12px 22px;
+    border-radius: 99px;
+    font-size: 28px;
+    font-weight: 700;
+    border: 2.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .region-tab.active {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .loc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .loc-btn {
+    background: var(--surface);
+    border: 2.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 10px;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--text);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .loc-btn:active { transform: scale(0.96); }
+
+  .loc-btn.selected {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 3px 14px rgba(27,100,168,0.3);
+  }
+
+  .loc-btn.etc {
+    border-style: dashed;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 32px;
+  }
+
+  .loc-btn.etc.selected {
+    background: var(--primary);
+    border-style: solid;
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .purpose-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .purpose-btn {
+    background: var(--surface);
+    border: 2.5px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+    -webkit-user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px 6px;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .purpose-btn:active { transform: scale(0.96); }
+
+  .purpose-btn .p-icon { font-size: 52px; }
+
+  .purpose-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 3px 14px rgba(42,125,63,0.3);
+  }
+
+  .keep-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 18px 0 0;
+    padding: 18px 20px;
+    background: var(--gray-bg);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .keep-row input[type=checkbox] {
+    width: 32px;
+    height: 32px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .keep-row label {
+    font-size: 28px;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .memo-input {
+    width: 100%;
+    margin-top: 14px;
+    padding: 20px 22px;
+    border: 2.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 34px;
+    font-weight: 600;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+  }
+
+  .memo-input:focus { border-color: var(--primary); }
+
+  .submit-wrap { padding: 22px 14px; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 26px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 38px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.12s;
+    box-shadow: 0 4px 18px rgba(27,100,168,0.3);
+  }
+
+  .submit-btn:active { transform: scale(0.98); }
+
+  .submit-btn:disabled {
+    background: #C5C3BB;
+    color: #9A9890;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1A1A19;
+    color: white;
+    padding: 20px 36px;
+    border-radius: 99px;
+    font-size: 30px;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.25s;
+    white-space: nowrap;
+    z-index: 100;
+    max-width: 92vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .log-list { padding: 14px; }
+
+  .log-empty {
+    text-align: center;
+    color: var(--muted);
+    font-size: 34px;
+    padding: 60px 0;
+    font-weight: 600;
+  }
+
+  .log-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .log-route {
+    font-size: 36px;
+    font-weight: 800;
+    word-break: keep-all;
+  }
+
+  .log-time {
+    font-size: 26px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  .log-badge {
+    font-size: 26px;
+    padding: 10px 20px;
+    border-radius: 99px;
+    background: var(--primary-bg);
+    color: var(--primary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .log-badge.food {
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+
+  .log-badge.other {
+    background: var(--gray-bg);
+    color: var(--gray);
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+    display: flex;
+    z-index: 10;
+  }
+
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 0 18px;
+    font-size: 24px;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .nav-item .nav-icon { font-size: 42px; }
+
+  .nav-item.active { color: var(--primary); }
+
+  .notice {
+    margin: 16px 14px 0;
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    background: var(--primary-bg);
+    color: var(--primary);
+    font-size: 24px;
+    font-weight: 700;
+  }
+</style>
 </head>
+
 <body>
-  <div class="header">
-    <div class="eyebrow">업무차량 운행기록</div>
-    <div class="title">스타리아 차량일지</div>
-    <div class="sub">사용자·업무목적·주유비 상신용 기록</div>
-    <div class="vehicle-badge">🚐 차량: STARIA-01</div>
+<div class="header">
+  <div class="header-left">
+    <img src="./assets/icon-192.png" alt="" class="app-logo" onerror="this.style.display='none'">
+    <div class="header-title">차량일지</div>
+  </div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="vehicle-strip">
+  스타리아 차량 <span>체크인 기록</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('checkin')">체크인</div>
+  <div class="tab" onclick="switchTab('logs')">오늘 기록</div>
+</div>
+
+<div class="screen active" id="screen-checkin">
+  <div class="notice">
+    차량 사용 목적과 도착 장소를 선택한 뒤 체크인하세요.
   </div>
 
-  <div class="wrap">
-    <div class="notice">
-      이 화면은 스타리아 차량 전용 출입구입니다. 실제 이동동선은 별도 GPS 시스템으로 확인하고, 이 화면에는 <b>사용자·업무목적·주유 여부·출력용 운행정보</b>를 남깁니다.
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">도착 장소</div>
+      <div class="step-selected" id="selLocLabel" style="display:none;"></div>
     </div>
 
-    <form id="logForm" method="POST" target="submitFrame">
-      <input type="hidden" name="action" value="saveStariaLog" />
-      <input type="hidden" name="vehicle_id" value="STARIA_01" />
-      <input type="hidden" name="vehicle_name" value="스타리아" />
-      <input type="hidden" name="source" value="github-pages" />
+    <div class="region-tabs" id="regionTabs">
+      <div class="region-tab active" onclick="switchRegion('기흥')">기흥</div>
+      <div class="region-tab" onclick="switchRegion('화성1')">화성1</div>
+      <div class="region-tab" onclick="switchRegion('화성2')">화성2</div>
+      <div class="region-tab" onclick="switchRegion('외부')">외부</div>
+    </div>
 
-      <div class="card">
-        <div class="card-title">1. 사용자 정보</div>
-        <div class="grid two">
-          <div>
-            <label class="required" for="user_name">사용자명</label>
-            <input id="user_name" name="user_name" type="text" autocomplete="name" placeholder="예: 최관영" required />
-          </div>
-          <div>
-            <label for="user_team">소속/구분</label>
-            <input id="user_team" name="user_team" type="text" placeholder="예: 화성지역 / 야간 / 지원" />
-          </div>
-        </div>
-        <div class="hint">자주 쓰는 사용자명은 해당 기기에 자동 기억됩니다.</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">2. 운행 시간</div>
-        <div class="grid two">
-          <div>
-            <div class="row-between">
-              <label class="required" for="start_at">사용 시작</label>
-              <button type="button" class="small-btn" onclick="setNow('start_at')">현재시간</button>
-            </div>
-            <input id="start_at" name="start_at" type="datetime-local" required />
-          </div>
-          <div>
-            <div class="row-between">
-              <label class="required" for="end_at">사용 종료</label>
-              <button type="button" class="small-btn" onclick="setNow('end_at')">현재시간</button>
-            </div>
-            <input id="end_at" name="end_at" type="datetime-local" required />
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">3. 업무 내용</div>
-        <div class="grid">
-          <div>
-            <label class="required" for="purpose">사용 목적</label>
-            <select id="purpose" name="purpose" required>
-              <option value="">선택하세요</option>
-              <option value="업무지원">업무지원</option>
-              <option value="회의/협의">회의/협의</option>
-              <option value="식자재/비품 이동">식자재/비품 이동</option>
-              <option value="구입/수령">구입/수령</option>
-              <option value="주유">주유</option>
-              <option value="세차/정비">세차/정비</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-          <div>
-            <label class="required" for="destination">방문지/업무구역</label>
-            <input id="destination" name="destination" type="text" placeholder="예: 16L, H1, 외부업체, 주유소" required />
-          </div>
-          <div>
-            <label for="purpose_detail">상세 내용</label>
-            <textarea id="purpose_detail" name="purpose_detail" placeholder="예: 행사 물품 이동, 회의 참석, 주유비 상신 대상 등"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">4. 주행/주유 정보</div>
-        <div class="grid two">
-          <div>
-            <label for="odometer_start">출발 km</label>
-            <input id="odometer_start" name="odometer_start" type="number" inputmode="decimal" step="0.1" placeholder="선택 입력" oninput="calcDistance()" />
-          </div>
-          <div>
-            <label for="odometer_end">복귀 km</label>
-            <input id="odometer_end" name="odometer_end" type="number" inputmode="decimal" step="0.1" placeholder="선택 입력" oninput="calcDistance()" />
-          </div>
-        </div>
-        <input id="distance_km" name="distance_km" type="hidden" />
-        <div class="hint" id="distanceHint">주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.</div>
-
-        <div style="height:14px"></div>
-        <label>주유 여부</label>
-        <div class="pill-row">
-          <button type="button" class="pill active" data-fuel="N" onclick="setFuel('N', this)">주유 없음</button>
-          <button type="button" class="pill" data-fuel="Y" onclick="setFuel('Y', this)">주유 있음</button>
-        </div>
-        <input type="hidden" id="fuel_yn" name="fuel_yn" value="N" />
-
-        <div id="fuelArea" class="fuel-area">
-          <div style="height:12px"></div>
-          <div class="grid two">
-            <div>
-              <label for="fuel_amount">주유 금액</label>
-              <input id="fuel_amount" name="fuel_amount" type="number" inputmode="numeric" placeholder="예: 80000" />
-            </div>
-            <div>
-              <label for="fuel_station">주유소</label>
-              <input id="fuel_station" name="fuel_station" type="text" placeholder="예: ○○주유소" />
-            </div>
-          </div>
-          <div style="height:12px"></div>
-          <div>
-            <label for="receipt_memo">영수증/상신 메모</label>
-            <input id="receipt_memo" name="receipt_memo" type="text" placeholder="예: 영수증 보관, 법인카드 사용 등" />
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">5. 특이사항</div>
-        <textarea id="note" name="note" placeholder="차량 이상, 정비 필요, 반납 특이사항 등을 입력하세요"></textarea>
-      </div>
-
-      <button id="submitBtn" type="submit" class="submit">운행일지 저장</button>
-      <div class="hint danger" style="text-align:center;margin-top:10px;">저장 후 Google Sheets에 기록됩니다. 중복 저장되지 않도록 버튼은 1회만 누르세요.</div>
-    </form>
+    <div class="loc-grid" id="locGrid"></div>
+    <input class="memo-input" id="locMemo" placeholder="장소를 직접 입력하세요" style="display:none;" oninput="onLocMemo(this)">
   </div>
 
-  <iframe class="hidden-frame" id="submitFrame" name="submitFrame"></iframe>
-  <div class="toast" id="toast"></div>
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num green">2</div>
+      <div class="step-title">이동 목적</div>
+      <div class="step-selected green" id="selPurposeLabel" style="display:none;"></div>
+    </div>
+
+    <div class="purpose-grid">
+      <div class="purpose-btn" data-purpose="식자재이동" onclick="selectPurpose(this)"><span class="p-icon">🚚</span><span>식자재</span></div>
+      <div class="purpose-btn" data-purpose="비품이동" onclick="selectPurpose(this)"><span class="p-icon">📦</span><span>비품</span></div>
+      <div class="purpose-btn" data-purpose="주유" onclick="selectPurpose(this)"><span class="p-icon">⛽</span><span>주유</span></div>
+      <div class="purpose-btn" data-purpose="세차" onclick="selectPurpose(this)"><span class="p-icon">🚿</span><span>세차</span></div>
+      <div class="purpose-btn" data-purpose="구입" onclick="selectPurpose(this)"><span class="p-icon">🛒</span><span>구입</span></div>
+      <div class="purpose-btn" data-purpose="기타" onclick="selectPurpose(this)"><span class="p-icon">✏️</span><span>기타</span></div>
+    </div>
+
+    <input class="memo-input" id="purposeMemo" placeholder="목적을 직접 입력하세요" style="display:none;" oninput="checkReady()">
+
+    <div class="keep-row" onclick="toggleKeep()">
+      <input type="checkbox" id="keepPurpose">
+      <label for="keepPurpose">다음에도 같은 목적 유지</label>
+    </div>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="submit-btn" id="submitBtn" disabled onclick="doCheckin()">체크인 기록</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-logs">
+  <div class="log-list" id="logList"><div class="log-empty">불러오는 중...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="nav">
+  <div class="nav-item active" id="nav-checkin" onclick="switchTab('checkin')"><span class="nav-icon">📍</span>체크인</div>
+  <div class="nav-item" id="nav-logs" onclick="switchTab('logs')"><span class="nav-icon">📋</span>오늘 기록</div>
+</div>
 
 <script>
-  // 1) GAS 웹앱 배포 URL을 여기에 넣으세요.
-  // 예: https://script.google.com/macros/s/AKfycb.../exec
   const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwDa_MXkY2lD_JZvR5k07goWJUrXMOz2Y__KfE_AHObEYhZrlztxt78USbiem82KgOFEQ/exec';
 
-  const form = document.getElementById('logForm');
-  const submitBtn = document.getElementById('submitBtn');
+  const SITES = {
+    '기흥':  ['SR1','SR3','6L','SDR'],
+    '화성1': ['DSR','유니버스','미캠','축구단','육상단'],
+    '화성2': ['H1','16L','17L','V1L'],
+    '외부':  ['주유소','✏️ 기타']
+  };
 
-  window.addEventListener('load', () => {
-    form.action = GAS_ENDPOINT;
-    setDefaultTimes();
-    restoreUser();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-  });
+  let state = {
+    region: '기흥',
+    loc: '',
+    locRegion: '',
+    locMemo: '',
+    purpose: '',
+    purposeMemo: '',
+    keepPurpose: false
+  };
 
-  form.addEventListener('submit', (e) => {
-    if (!GAS_ENDPOINT || GAS_ENDPOINT.includes('PASTE_GAS')) {
-      e.preventDefault();
-      showToast('GAS 주소가 설정되지 않았습니다');
-      return;
-    }
+  window.onload = () => {
+    setHeaderDate();
+    renderLocButtons();
+    restoreKeepPurpose();
+  };
 
-    const start = document.getElementById('start_at').value;
-    const end = document.getElementById('end_at').value;
-    if (start && end && new Date(end) < new Date(start)) {
-      e.preventDefault();
-      showToast('종료시간이 시작시간보다 빠릅니다');
-      return;
-    }
-
-    const userName = document.getElementById('user_name').value.trim();
-    const userTeam = document.getElementById('user_team').value.trim();
-    localStorage.setItem('staria_user_name', userName);
-    localStorage.setItem('staria_user_team', userTeam);
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = '저장 중...';
-
-    setTimeout(() => {
-      showToast('저장 요청 완료');
-      submitBtn.textContent = '운행일지 저장';
-      submitBtn.disabled = false;
-      clearAfterSubmit();
-    }, 1600);
-  });
-
-  function setDefaultTimes() {
-    const now = new Date();
-    const end = toLocalDatetimeValue(now);
-    const startDate = new Date(now.getTime() - 60 * 60 * 1000);
-    document.getElementById('start_at').value = toLocalDatetimeValue(startDate);
-    document.getElementById('end_at').value = end;
+  function setHeaderDate() {
+    const d = new Date();
+    const day = ['일','월','화','수','목','금','토'][d.getDay()];
+    document.getElementById('headerDate').textContent =
+      `${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${day}`;
   }
 
-  function setNow(id) {
-    document.getElementById(id).value = toLocalDatetimeValue(new Date());
+  function switchRegion(region) {
+    state.region = region;
+    document.querySelectorAll('.region-tab').forEach(t => {
+      t.classList.toggle('active', t.textContent === region);
+    });
+    renderLocButtons();
   }
 
-  function toLocalDatetimeValue(date) {
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  function renderLocButtons() {
+    const grid = document.getElementById('locGrid');
+    const sites = SITES[state.region] || [];
+
+    grid.innerHTML = sites.map(name => {
+      const isEtc = name.includes('기타');
+      const dataLoc = isEtc ? '기타' : name;
+      const dataRegion = isEtc ? '기타' : state.region;
+      const selClass = (state.loc === dataLoc && state.locRegion === dataRegion) ? ' selected' : '';
+      const etcClass = isEtc ? ' etc' : '';
+
+      return `
+        <div class="loc-btn${etcClass}${selClass}"
+             data-loc="${escapeAttr(dataLoc)}"
+             data-region="${escapeAttr(dataRegion)}"
+             onclick="selectLoc(this)">
+          ${escapeHtml(name)}
+        </div>`;
+    }).join('');
   }
 
-  function restoreUser() {
-    const name = localStorage.getItem('staria_user_name') || '';
-    const team = localStorage.getItem('staria_user_team') || '';
-    document.getElementById('user_name').value = name;
-    document.getElementById('user_team').value = team;
+  function switchTab(tab) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    document.getElementById(`screen-${tab}`).classList.add('active');
+    document.querySelector(`.tab:nth-child(${tab === 'checkin' ? 1 : 2})`).classList.add('active');
+    document.getElementById(`nav-${tab}`).classList.add('active');
+
+    if (tab === 'logs') loadLogs();
   }
 
-  function setFuel(value, el) {
-    document.getElementById('fuel_yn').value = value;
-    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('fuelArea').classList.toggle('show', value === 'Y');
-  }
+  function selectLoc(el) {
+    document.querySelectorAll('.loc-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
 
-  function calcDistance() {
-    const s = parseFloat(document.getElementById('odometer_start').value);
-    const e = parseFloat(document.getElementById('odometer_end').value);
-    const hidden = document.getElementById('distance_km');
-    const hint = document.getElementById('distanceHint');
-    if (!isNaN(s) && !isNaN(e) && e >= s) {
-      const d = Math.round((e - s) * 10) / 10;
-      hidden.value = d;
-      hint.textContent = `계산 주행거리: ${d} km`;
+    state.loc = el.dataset.loc;
+    state.locRegion = el.dataset.region;
+
+    const memoEl = document.getElementById('locMemo');
+    const label = document.getElementById('selLocLabel');
+
+    if (state.loc === '기타') {
+      memoEl.style.display = 'block';
+      memoEl.focus();
+      label.style.display = 'none';
     } else {
-      hidden.value = '';
-      hint.textContent = '주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.';
+      memoEl.style.display = 'none';
+      state.locMemo = '';
+      memoEl.value = '';
+      label.textContent = state.loc;
+      label.style.display = 'block';
+    }
+
+    checkReady();
+  }
+
+  function onLocMemo(el) {
+    state.locMemo = el.value.trim();
+
+    const label = document.getElementById('selLocLabel');
+    if (state.locMemo) {
+      label.textContent = state.locMemo;
+      label.style.display = 'block';
+    } else {
+      label.style.display = 'none';
+    }
+
+    checkReady();
+  }
+
+  function selectPurpose(el) {
+    document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+
+    state.purpose = el.dataset.purpose;
+
+    const memoEl = document.getElementById('purposeMemo');
+    const label = document.getElementById('selPurposeLabel');
+
+    if (state.purpose === '기타') {
+      memoEl.style.display = 'block';
+      memoEl.focus();
+      label.style.display = 'none';
+    } else {
+      memoEl.style.display = 'none';
+      state.purposeMemo = '';
+      memoEl.value = '';
+      label.textContent = state.purpose;
+      label.style.display = 'block';
+    }
+
+    checkReady();
+  }
+
+  function toggleKeep() {
+    const cb = document.getElementById('keepPurpose');
+    cb.checked = !cb.checked;
+    state.keepPurpose = cb.checked;
+
+    localStorage.setItem('keepPurpose', cb.checked ? '1' : '0');
+
+    if (cb.checked && state.purpose) {
+      localStorage.setItem('savedPurpose', state.purpose);
     }
   }
 
-  function clearAfterSubmit() {
-    document.getElementById('purpose').value = '';
-    document.getElementById('destination').value = '';
-    document.getElementById('purpose_detail').value = '';
-    document.getElementById('odometer_start').value = '';
-    document.getElementById('odometer_end').value = '';
-    document.getElementById('distance_km').value = '';
-    document.getElementById('fuel_amount').value = '';
-    document.getElementById('fuel_station').value = '';
-    document.getElementById('receipt_memo').value = '';
-    document.getElementById('note').value = '';
-    document.getElementById('distanceHint').textContent = '주행거리는 선택 입력입니다. 입력 시 출력용 운행일지에 반영됩니다.';
-    setDefaultTimes();
+  function restoreKeepPurpose() {
+    const keep = localStorage.getItem('keepPurpose') === '1';
+    const saved = localStorage.getItem('savedPurpose') || '';
+
+    if (!keep || !saved) return;
+
+    state.keepPurpose = true;
+    state.purpose = saved;
+
+    document.getElementById('keepPurpose').checked = true;
+
+    document.querySelectorAll('.purpose-btn').forEach(b => {
+      if (b.dataset.purpose === saved) b.classList.add('selected');
+    });
+
+    const label = document.getElementById('selPurposeLabel');
+    label.textContent = saved;
+    label.style.display = 'block';
+
+    checkReady();
+  }
+
+  function checkReady() {
+    const locOk = state.loc && (state.loc !== '기타' || document.getElementById('locMemo').value.trim());
+    const purposeOk = state.purpose && (state.purpose !== '기타' || document.getElementById('purposeMemo').value.trim());
+
+    document.getElementById('submitBtn').disabled = !(locOk && purposeOk);
+  }
+
+  async function doCheckin() {
+    const btn = document.getElementById('submitBtn');
+    const purposeMemo = document.getElementById('purposeMemo').value.trim();
+    const finalLoc = state.loc === '기타' ? document.getElementById('locMemo').value.trim() : state.loc;
+
+    if (!finalLoc || !state.purpose) {
+      showToast('장소와 목적을 선택하세요');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '저장 중...';
+
+    const payload = {
+      action: 'checkin',
+      location: finalLoc,
+      region: state.locRegion,
+      purpose: state.purpose,
+      purposeMemo: purposeMemo
+    };
+
+    try {
+      const data = await callGas(payload);
+
+      if (data && data.ok) {
+        showToast('✅ ' + finalLoc + ' 체크인 완료');
+
+        state.loc = '';
+        state.locMemo = '';
+        document.getElementById('locMemo').style.display = 'none';
+        document.getElementById('locMemo').value = '';
+        document.getElementById('selLocLabel').style.display = 'none';
+        renderLocButtons();
+
+        if (state.keepPurpose) {
+          localStorage.setItem('savedPurpose', state.purpose);
+        } else {
+          document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('selected'));
+          document.getElementById('purposeMemo').style.display = 'none';
+          document.getElementById('purposeMemo').value = '';
+          document.getElementById('selPurposeLabel').style.display = 'none';
+          state.purpose = '';
+        }
+
+        btn.textContent = '체크인 기록';
+        checkReady();
+      } else {
+        showToast('❌ 저장 실패: ' + (data ? data.message : '알 수 없는 오류'));
+        btn.disabled = false;
+        btn.textContent = '체크인 기록';
+      }
+    } catch (err) {
+      showToast('❌ 저장 오류: ' + (err.message || err));
+      btn.disabled = false;
+      btn.textContent = '체크인 기록';
+    }
+  }
+
+  async function loadLogs() {
+    const listEl = document.getElementById('logList');
+    listEl.innerHTML = '<div class="log-empty">불러오는 중...</div>';
+
+    try {
+      const data = await callGas({ action: 'getLogs' });
+
+      if (!data || !data.ok || !data.logs || !data.logs.length) {
+        listEl.innerHTML = '<div class="log-empty">오늘 기록이 없습니다</div>';
+        return;
+      }
+
+      listEl.innerHTML = data.logs.map(log => {
+        const time = formatTime(log.checkin_at);
+        const from = log.prev_location || '출발';
+        const purpose = log.purpose === '기타' ? (log.purpose_memo || '기타') : log.purpose;
+        const badgeCls = log.purpose === '식자재이동' || log.purpose === '비품이동'
+          ? 'food'
+          : log.purpose === '기타'
+            ? 'other'
+            : '';
+
+        const prevTime = log.prev_at ? formatTime(log.prev_at) : '';
+        const timeStr = prevTime ? prevTime + ' → ' + time : time + ' 도착';
+
+        return `
+          <div class="log-item">
+            <div>
+              <div class="log-route">${escapeHtml(from)} → ${escapeHtml(log.location || '')}</div>
+              <div class="log-time">${escapeHtml(timeStr)}</div>
+            </div>
+            <div class="log-badge ${badgeCls}">${escapeHtml(purpose)}</div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      listEl.innerHTML = '<div class="log-empty">불러오기 실패</div>';
+      showToast('기록 조회 실패');
+    }
+  }
+
+  async function callGas(payload) {
+    const res = await fetch(GAS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+
+    try {
+      return JSON.parse(text);
+    } catch (err) {
+      throw new Error('GAS 응답 형식 오류');
+    }
+  }
+
+  function formatTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
   }
 
   function showToast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;
     el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 2500);
+
+    setTimeout(() => {
+      el.classList.remove('show');
+    }, 2500);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value).replace(/`/g, '&#096;');
   }
 </script>
 </body>
