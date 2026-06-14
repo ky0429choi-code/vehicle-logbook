@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="./assets/icon-192.png">
 <link rel="icon" href="./assets/icon-192.png">
 <title>차량일지</title>
-<!-- mobile-compact-bridge-v1 -->
+<!-- mobile-compact-jsonp-v1 -->
 
 <style>
   :root {
@@ -502,7 +502,6 @@
 </head>
 
 <body>
-<iframe id="gasBridge" src="https://script.google.com/macros/s/AKfycbwDa_MXkY2lD_JZvR5k07goWJUrXMOz2Y__KfE_AHObEYhZrlztxt78USbiem82KgOFEQ/exec?page=bridge" style="display:none;width:0;height:0;border:0;" title="gas bridge"></iframe>
 <div class="header">
   <div class="header-left">
     <img src="./assets/icon-192.png" alt="" class="app-logo" onerror="this.style.display='none'">
@@ -584,7 +583,7 @@
 </div>
 
 <script>
-  const GAS_BRIDGE_URL = 'https://script.google.com/macros/s/AKfycbwDa_MXkY2lD_JZvR5k07goWJUrXMOz2Y__KfE_AHObEYhZrlztxt78USbiem82KgOFEQ/exec?page=bridge';
+  const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwDa_MXkY2lD_JZvR5k07goWJUrXMOz2Y__KfE_AHObEYhZrlztxt78USbiem82KgOFEQ/exec';
 
   const SITES = {
     '기흥':  ['SR1','SR3','6L','SDR'],
@@ -859,45 +858,53 @@
     }
   }
 
-  const pendingBridgeRequests = {};
-
-  window.addEventListener('message', function(event) {
-    const msg = event.data || {};
-    if (msg.type !== 'VEHICLE_LOG_RESPONSE') return;
-
-    const pending = pendingBridgeRequests[msg.id];
-    if (!pending) return;
-
-    clearTimeout(pending.timer);
-    delete pendingBridgeRequests[msg.id];
-
-    const body = msg.body || {};
-    if (body.ok) pending.resolve(body);
-    else pending.reject(new Error(body.message || 'GAS 처리 오류'));
-  });
-
   async function callGas(payload) {
-    const frame = document.getElementById('gasBridge');
+    return jsonpRequest(payload);
+  }
 
-    if (!frame || !frame.contentWindow) {
-      throw new Error('GAS 연결 준비 실패');
-    }
-
-    const id = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-
+  function jsonpRequest(payload) {
     return new Promise((resolve, reject) => {
+      const callbackName = '__vehicleLogCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const params = new URLSearchParams();
+
+      Object.keys(payload || {}).forEach(key => {
+        const value = payload[key];
+        if (value !== undefined && value !== null) {
+          params.append(key, value);
+        }
+      });
+
+      params.append('callback', callbackName);
+
+      const script = document.createElement('script');
       const timer = setTimeout(() => {
-        delete pendingBridgeRequests[id];
-        reject(new Error('GAS 응답 지연'));
-      }, 20000);
+        cleanup();
+        reject(new Error('저장 응답 지연'));
+      }, 15000);
 
-      pendingBridgeRequests[id] = { resolve, reject, timer };
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[callbackName]; } catch (err) { window[callbackName] = undefined; }
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      }
 
-      frame.contentWindow.postMessage({
-        type: 'VEHICLE_LOG_REQUEST',
-        id: id,
-        payload: payload
-      }, '*');
+      window[callbackName] = function(data) {
+        cleanup();
+
+        if (data && data.ok) {
+          resolve(data);
+        } else {
+          reject(new Error(data && data.message ? data.message : '처리 실패'));
+        }
+      };
+
+      script.onerror = function() {
+        cleanup();
+        reject(new Error('GAS 연결 실패'));
+      };
+
+      script.src = GAS_ENDPOINT + '?' + params.toString();
+      document.body.appendChild(script);
     });
   }
 
