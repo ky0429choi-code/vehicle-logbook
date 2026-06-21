@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a1a" />
+  <title>근무 패턴 분석 — 맵 뷰</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    /* ══════════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════ */
+    :root {
+      --bg:          #0a0a1a;
+      --bg-card:     rgba(16, 16, 36, 0.82);
+      --bg-glass:    rgba(20, 20, 48, 0.72);
+      --border:      rgba(255,255,255,0.08);
+      --border-glow: rgba(0, 229, 255, 0.18);
+      --text:        #e8e6f0;
+      --text-muted:  #8a88a0;
+      --text-dim:    #5a586e;
+      --cyan:        #00e5ff;
+      --cyan-bg:     rgba(0, 229, 255, 0.10);
+      --magenta:     #ff0080;
+      --magenta-bg:  rgba(255, 0, 128, 0.10);
+      --purple:      #7c4dff;
+      --purple-bg:   rgba(124, 77, 255, 0.10);
+      --green:       #00e676;
+      --green-bg:    rgba(0, 230, 118, 0.10);
+      --amber:       #ffab00;
+      --amber-bg:    rgba(255, 171, 0, 0.10);
+      --red:         #ff5252;
+      --radius:      16px;
+      --radius-sm:   10px;
+      --font:        'Inter', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      --panel-w:     360px;
+    }
+
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* ══════════════════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════════════════ */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ── Header ── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 800;
+      flex-shrink: 0;
+    }
+    .top-left { display: flex; align-items: center; gap: 14px; }
+    .logo-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .top-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+    .top-sub { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .top-right { display: flex; align-items: center; gap: 10px; }
+    .btn-print {
+      background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 14px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      font-family: var(--font); transition: all 0.2s;
+    }
+    .btn-print:hover { background: var(--cyan); color: #000; border-color: var(--cyan); }
+    .top-badge {
+      font-size: 11px; font-weight: 800; padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--amber-bg); color: var(--amber);
+      border: 1px solid rgba(255,171,0,0.2);
+    }
+
+    /* ── Main Area ── */
+    .main-area {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Side Panel ── */
+    .side-panel {
+      width: var(--panel-w);
+      background: var(--bg-glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 600;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+      flex-shrink: 0;
+    }
+    .side-panel::-webkit-scrollbar { width: 4px; }
+    .side-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+
+    .panel-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-section:last-child { border-bottom: none; }
+    .section-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 12px;
+    }
+
+    /* ── Map ── */
+    .map-wrap {
+      flex: 1;
+      position: relative;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Leaflet overrides for dark theme */
+    .leaflet-control-zoom a {
+      background: var(--bg-card) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-control-attribution {
+      background: rgba(10,10,26,0.7) !important;
+      color: var(--text-dim) !important;
+      font-size: 10px !important;
+    }
+    .leaflet-control-attribution a { color: var(--text-muted) !important; }
+    .leaflet-popup-content-wrapper {
+      background: var(--bg-card) !important;
+      color: var(--text) !important;
+      border-radius: var(--radius-sm) !important;
+      border: 1px solid var(--border-glow) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip { background: var(--bg-card) !important; }
+    .leaflet-popup-content { font-family: var(--font) !important; font-size: 13px !important; }
+
+    /* ══════════════════════════════════════════════
+       CONTROLS & COMPONENTS
+    ══════════════════════════════════════════════ */
+
+    /* Period filter pills */
+    .filter-pills {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .pill {
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .pill:hover { background: rgba(255,255,255,0.08); }
+    .pill.active {
+      background: var(--cyan-bg);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+    }
+
+    /* View mode toggles */
+    .view-toggles {
+      display: flex; gap: 6px;
+    }
+    .view-btn {
+      flex: 1; padding: 9px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 700;
+      text-align: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .view-btn:hover { background: rgba(255,255,255,0.06); }
+    .view-btn.active {
+      background: var(--purple-bg);
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+    .view-btn .v-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+
+    /* Stat mini cards */
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-mini {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 12px;
+    }
+    .stat-mini-label { font-size: 10px; color: var(--text-dim); font-weight: 700; margin-bottom: 4px; }
+    .stat-mini-val { font-size: 24px; font-weight: 900; }
+    .stat-mini-unit { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-left: 2px; }
+
+    /* Route list */
+    .route-list { display: flex; flex-direction: column; gap: 8px; }
+    .route-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .route-row:hover { background: rgba(255,255,255,0.06); border-color: var(--border-glow); }
+    .route-rank {
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 900; flex-shrink: 0;
+    }
+    .route-rank.r1 { background: var(--cyan-bg); color: var(--cyan); }
+    .route-rank.r2 { background: var(--purple-bg); color: var(--purple); }
+    .route-rank.r3 { background: var(--magenta-bg); color: var(--magenta); }
+    .route-rank.r4, .route-rank.r5 { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+    .route-info { flex: 1; min-width: 0; }
+    .route-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .route-meta { font-size: 10px; color: var(--text-dim); font-weight: 600; margin-top: 2px; }
+    .route-count {
+      font-size: 14px; font-weight: 900;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+    .route-bar-track {
+      width: 60px; height: 4px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden; flex-shrink: 0;
+    }
+    .route-bar-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      transition: width 0.5s ease;
+    }
+
+    /* Site list */
+    .site-list { display: flex; flex-direction: column; gap: 6px; }
+    .site-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .site-row:hover { background: rgba(255,255,255,0.06); }
+    .site-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .site-info { flex: 1; }
+    .site-name { font-size: 13px; font-weight: 700; }
+    .site-region { font-size: 10px; color: var(--text-dim); font-weight: 600; }
+    .site-visits {
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+
+    /* ── Timeline bar ── */
+    .timeline-bar {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 12px 20px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      z-index: 700;
+    }
+    .tl-play {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      border: none; color: white;
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.15s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+    .tl-play:hover { transform: scale(1.08); box-shadow: 0 0 20px rgba(0,229,255,0.3); }
+    .tl-play:active { transform: scale(0.96); }
+    .tl-track {
+      flex: 1; height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      position: relative;
+      cursor: pointer;
+    }
+    .tl-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .tl-dots {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+    }
+    .tl-dot {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--cyan);
+      border: 2px solid var(--bg);
+      transition: all 0.3s;
+    }
+    .tl-dot.passed { background: var(--purple); }
+    .tl-time {
+      font-size: 13px; font-weight: 800; color: var(--cyan);
+      min-width: 44px; text-align: center; flex-shrink: 0;
+    }
+    .tl-label {
+      font-size: 11px; color: var(--text-muted); font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .tl-speed {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px; font-weight: 800;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ── Map overlays ── */
+    .map-legend {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      z-index: 500;
+      min-width: 160px;
+    }
+    .legend-title { font-size: 10px; font-weight: 800; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 10px; text-transform: uppercase; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .legend-item:last-child { margin-bottom: 0; }
+    .legend-color {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .legend-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+    /* ── Mobile toggle ── */
+    .panel-toggle {
+      display: none;
+      position: absolute;
+      top: 14px; left: 14px;
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Pulse animation for markers ── */
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    .marker-pulse {
+      position: absolute;
+      border-radius: 50%;
+      animation: pulse-ring 2s ease-out infinite;
+    }
+
+    /* ── Route animation ── */
+    @keyframes dash-flow {
+      to { stroke-dashoffset: -20; }
+    }
+    .route-animated {
+      animation: dash-flow 1s linear infinite;
+    }
+
+    /* ── Fade in ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      color: var(--text);
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-size: 13px; font-weight: 700;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 9999;
+      white-space: nowrap;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Active route highlight on map ── */
+    .active-route-popup {
+      font-family: var(--font) !important;
+    }
+    .popup-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+    .popup-meta { font-size: 11px; color: var(--text-muted); }
+    .popup-stat { display: flex; gap: 12px; margin-top: 8px; }
+    .popup-stat-item { text-align: center; }
+    .popup-stat-val { font-size: 18px; font-weight: 900; color: var(--cyan); }
+    .popup-stat-label { font-size: 9px; color: var(--text-dim); font-weight: 700; }
+
+    /* ══════════════════════════════════════════════
+       GANTT CHART
+    ══════════════════════════════════════════════ */
+    .gantt-wrap { margin-top: 10px; }
+    .gantt-row {
+      position: relative; height: 28px; background: rgba(255,255,255,0.03);
+      border-radius: 4px; overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border);
+    }
+    .gantt-block {
+      position: absolute; top: 0; bottom: 0;
+      border-right: 1px solid rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .gantt-block.work { background: rgba(0, 229, 255, 0.4); border-bottom: 2px solid var(--cyan); }
+    .gantt-block.transit { background: rgba(0, 230, 118, 0.3); border-bottom: 2px solid var(--green); }
+    .gantt-block.gap { background: rgba(255, 82, 82, 0.4); border-bottom: 2px solid var(--red); color: #fff; }
+    
+    .gantt-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); padding: 0 4px; font-weight: 700; margin-bottom: 4px; }
+
+    /* ══════════════════════════════════════════════
+       PRINT STYLES
+    ══════════════════════════════════════════════ */
+    #printSection { display: none; }
+    @media print {
+      body * { visibility: hidden; }
+      #printSection, #printSection * { visibility: visible; }
+      #printSection {
+        display: block !important;
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: #fff !important; color: #000 !important;
+        font-family: 'Malgun Gothic', sans-serif !important;
+      }
+      .print-title { font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 20px; color: #000; }
+      .print-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; color: #000; }
+      .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: center; }
+      .print-table th { background: #f0f0f0 !important; font-weight: bold; }
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .side-panel {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        transform: translateX(-100%);
+        width: 300px;
+        z-index: 900;
+      }
+      .side-panel.open {
+        transform: translateX(0);
+      }
+      .panel-toggle {
+        display: flex !important;
+      }
+      .map-legend {
+        bottom: 10px; right: 10px;
+        padding: 10px 12px;
+      }
+      .timeline-bar {
+        padding: 10px 12px 14px;
+        gap: 10px;
+      }
+      .tl-label { display: none; }
+      :root {
+        --panel-w: 300px;
+      }
+    }
+
+    /* ── Mobile overlay ── */
+    .panel-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 850;
+    }
+    .panel-overlay.show { display: block; }
+
+    /* ── Worker filter ── */
+    .worker-select {
+      width: 100%; padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text); font-size: 13px; font-weight: 700;
+      outline: none; font-family: var(--font);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238a88a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .worker-select:focus { border-color: var(--cyan); }
+    .worker-select option { background: #1a1a2e; color: var(--text); }
+    .worker-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 800;
+      background: var(--magenta-bg); color: var(--magenta);
+      border: 1px solid rgba(255,0,128,0.2);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ PRINT SECTION ═══ -->
+<div id="printSection">
+  <div class="print-title">차량 운행일지 (주유비 상신용)</div>
+  <table class="print-table" id="printTable">
+    <thead>
+      <tr>
+        <th>일자</th>
+        <th>근무자</th>
+        <th>출발시간</th>
+        <th>도착시간</th>
+        <th>출발지</th>
+        <th>도착지</th>
+        <th>운행 목적</th>
+      </tr>
+    </thead>
+    <tbody id="printTbody">
+      <!-- Data injected here -->
+    </tbody>
+  </table>
+</div>
+
+<div class="app">
+  <!-- ═══ TOP BAR ═══ -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="logo-icon">🗺️</div>
+      <div>
+        <div class="top-title">근무 패턴 분석</div>
+        <div class="top-sub" id="topDate"></div>
+      </div>
+    </div>
+    <div class="top-right">
+      <button class="btn-print" onclick="printLog()">🖨️ 일지 출력</button>
+      <span class="worker-badge" id="currentWorkerBadge" style="display:none;">👤 전체</span>
+      <div class="top-badge">관리자</div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN AREA ═══ -->
+  <div class="main-area">
+    <!-- Mobile toggle -->
+    <button class="panel-toggle" id="panelToggle" onclick="togglePanel()">☰</button>
+    <div class="panel-overlay" id="panelOverlay" onclick="togglePanel()"></div>
+
+    <!-- ═══ SIDE PANEL ═══ -->
+    <div class="side-panel" id="sidePanel">
+
+      <!-- Worker Filter -->
+      <div class="panel-section">
+        <div class="section-label">👤 근무자 선택</div>
+        <select class="worker-select" id="workerSelect" onchange="setWorker(this.value)">
+          <option value="all">전체 근무자</option>
+        </select>
+      </div>
+
+      <!-- View Mode -->
+      <div class="panel-section">
+        <div class="section-label">🔍 보기 모드</div>
+        <div class="view-toggles">
+          <div class="view-btn active" data-view="markers" onclick="setView('markers', this)">
+            <span class="v-icon">📍</span>마커
+          </div>
+          <div class="view-btn" data-view="routes" onclick="setView('routes', this)">
+            <span class="v-icon">🔀</span>경로
+          </div>
+          <div class="view-btn" data-view="heatmap" onclick="setView('heatmap', this)">
+            <span class="v-icon">🔥</span>히트맵
+          </div>
+        </div>
+      </div>
+
+      <!-- Period Filter -->
+      <div class="panel-section">
+        <div class="section-label">📅 기간 필터</div>
+        <div class="filter-pills" id="periodPills">
+          <div class="pill active" data-period="today" onclick="setPeriod('today', this)">오늘</div>
+          <div class="pill" data-period="week" onclick="setPeriod('week', this)">이번 주</div>
+          <div class="pill" data-period="month" onclick="setPeriod('month', this)">이번 달</div>
+          <div class="pill" data-period="all" onclick="setPeriod('all', this)">전체</div>
+        </div>
+      </div>
+
+      <!-- Time Filter -->
+      <div class="panel-section">
+        <div class="section-label">⏰ 시간대</div>
+        <div class="filter-pills" id="timePills">
+          <div class="pill active" data-time="all" onclick="setTimeFilter('all', this)">전체</div>
+          <div class="pill" data-time="morning" onclick="setTimeFilter('morning', this)">🌅 오전</div>
+          <div class="pill" data-time="afternoon" onclick="setTimeFilter('afternoon', this)">☀️ 오후</div>
+          <div class="pill" data-time="evening" onclick="setTimeFilter('evening', this)">🌙 야간</div>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="panel-section">
+        <div class="section-label">📊 요약 통계</div>
+        <div class="stat-row">
+          <div class="stat-mini">
+            <div class="stat-mini-label">총 이동</div>
+            <div><span class="stat-mini-val" id="statTotal" style="color:var(--cyan);">0</span><span class="stat-mini-unit">건</span></div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">방문 사업장</div>
+            <div><span class="stat-mini-val" id="statSites" style="color:var(--purple);">0</span><span class="stat-mini-unit">곳</span></div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">평균 이동</div>
+            <div><span class="stat-mini-val" id="statAvgTime" style="color:var(--green);">0</span><span class="stat-mini-unit">분</span></div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">공백 구간</div>
+            <div><span class="stat-mini-val" id="statGaps" style="color:var(--red);">0</span><span class="stat-mini-unit">건</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Routes -->
+      <div class="panel-section">
+        <div class="section-label">🏆 빈번한 경로 TOP 5</div>
+        <div class="route-list" id="topRoutes"></div>
+      </div>
+
+      <!-- Site Visits -->
+      <div class="panel-section">
+        <div class="section-label">🏢 사업장별 방문</div>
+        <div class="site-list" id="siteVisits"></div>
+      </div>
+
+      <!-- Gantt Chart -->
+      <div class="panel-section" id="ganttSection" style="display:none;">
+        <div class="section-label">⏱️ 근무 성실도 타임라인 (07:00 ~ 16:00)</div>
+        <div class="gantt-wrap">
+          <div class="gantt-labels">
+            <span>07:00</span>
+            <span>10:00</span>
+            <span>13:00</span>
+            <span>16:00</span>
+          </div>
+          <div class="gantt-row" id="ganttRow">
+            <!-- Blocks injected here -->
+          </div>
+          <div style="display:flex;gap:12px;font-size:9px;color:var(--text-dim);margin-top:8px;justify-content:center;">
+            <span style="color:var(--cyan);">■ 체류/업무</span>
+            <span style="color:var(--green);">■ 이동</span>
+            <span style="color:var(--red);">■ 미소명(의심공백)</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ MAP ═══ -->
+    <div class="map-wrap">
+      <div id="map"></div>
+
+      <!-- Legend -->
+      <div class="map-legend" id="mapLegend">
+        <div class="legend-title">지역 구분</div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--cyan);"></div><span class="legend-label">기흥</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--green);"></div><span class="legend-label">화성1</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--purple);"></div><span class="legend-label">화성</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:var(--amber);"></div><span class="legend-label">외부</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TIMELINE BAR ═══ -->
+  <div class="timeline-bar">
+    <button class="tl-play" id="tlPlay" onclick="toggleTimeline()">▶</button>
+    <div class="tl-label">타임라인</div>
+    <div class="tl-track" id="tlTrack" onclick="seekTimeline(event)">
+      <div class="tl-fill" id="tlFill"></div>
+      <div class="tl-dots" id="tlDots"></div>
+    </div>
+    <div class="tl-time" id="tlTime">--:--</div>
+    <button class="tl-speed" id="tlSpeed" onclick="cycleSpeed()">1×</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet Heat -->
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIGURATION
+// ══════════════════════════════════════════════════
+const ADMIN_KEY = 'admin-2024-wls';
+
+// GAS 웹앱 URL (실제 배포 시 설정)
+// 예: 'https://script.google.com/macros/s/AKfycb.../exec'
+const GAS_ENDPOINT = '';
+
+// ══════════════════════════════════════════════════
+// SITE COORDINATES (삼성 기흥/화성 캠퍼스 추정 좌표)
+// ══════════════════════════════════════════════════
+const SITE_COORDS = {
+  // 기흥
+  'SR1':     { lat: 37.2312977025396, lng: 127.082239014047, region: '기흥', label: 'SR1' },
+  'SR3':     { lat: 37.2265843379619, lng: 127.083507179798, region: '기흥', label: 'SR3' },
+  '6L':      { lat: 37.2291516780377, lng: 127.084417115749, region: '기흥', label: '6L' },
+  'SDR':     { lat: 37.2248782210408, lng: 127.087843381675, region: '기흥', label: 'SDR' },
+  // 화성
+  'H1':      { lat: 37.2220627161994, lng: 127.066713872838, region: '화성', label: 'H1' },
+  '16L':     { lat: 37.2141631771704, lng: 127.069912137948, region: '화성', label: '16L' },
+  '17L':     { lat: 37.2165997832634, lng: 127.071142436819, region: '화성', label: '17L' },
+  'V1L':     { lat: 37.2143423434402, lng: 127.071658561506, region: '화성', label: 'V1L' },
+  // 화성1
+  'DSR':     { lat: 37.2249624497854, lng: 127.069567170735, region: '화성1', label: 'DSR' },
+  '미캠':    { lat: 37.2522695694531, lng: 127.054127627240, region: '화성1', label: '미캠' },
+  '에듀':    { lat: 37.2140215027068, lng: 127.098150570807, region: '화성1', label: '에듀' },
+  '유니버스': { lat: 37.2342572537230, lng: 127.076078006670, region: '화성1', label: '유니버스' },
+  '육상단':  { lat: 37.2262959932578, lng: 127.069579663622, region: '화성1', label: '육상단' },
+  '축구단':  { lat: 37.2259812637685, lng: 127.068486386870, region: '화성1', label: '축구단' },
+  // 외부
+  '주유소':  { lat: 37.22600, lng: 127.06500, region: '외부', label: '주유소' },
+};
+
+const REGION_COLORS = {
+  '기흥':  '#00e5ff',
+  '화성':  '#7c4dff',
+  '화성1': '#00e676',
+  '외부':  '#ffab00',
+};
+
+const TIME_COLORS = {
+  morning:   '#ffd600',
+  afternoon: '#ff9100',
+  evening:   '#ff5252',
+};
+
+// 근무자 목록 (데모)
+const WORKERS = ['최관영', '김민수', '박지훈'];
+
+// ══════════════════════════════════════════════════
+// DEMO DATA (실제 GAS 연동 전 시뮬레이션)
+// ══════════════════════════════════════════════════
+function generateDemoData() {
+  const routes = [
+    { from: 'SR1',  to: 'DSR',  purpose: '식자재이동', weight: 8 },
+    { from: 'DSR',  to: 'SR1',  purpose: '식자재이동', weight: 7 },
+    { from: 'SR1',  to: '16L',  purpose: '비품이동',   weight: 6 },
+    { from: '16L',  to: 'SR1',  purpose: '비품이동',   weight: 5 },
+    { from: 'SR3',  to: 'H1',   purpose: '식자재이동', weight: 5 },
+    { from: 'H1',   to: 'SR3',  purpose: '식자재이동', weight: 5 },
+    { from: 'SR1',  to: '유니버스', purpose: '비품이동', weight: 4 },
+    { from: '유니버스', to: 'SR1', purpose: '비품이동', weight: 4 },
+    { from: '6L',   to: '17L',  purpose: '식자재이동', weight: 3 },
+    { from: '17L',  to: '6L',   purpose: '식자재이동', weight: 3 },
+    { from: 'SDR',  to: '미캠',  purpose: '구입',      weight: 3 },
+    { from: 'SR1',  to: '주유소', purpose: '주유',      weight: 2 },
+    { from: '주유소', to: 'SR1',  purpose: '주유',      weight: 2 },
+    { from: 'SR1',  to: 'V1L',   purpose: '식자재이동', weight: 2 },
+    { from: 'V1L',  to: 'SR1',   purpose: '식자재이동', weight: 2 },
+    { from: 'DSR',  to: '축구단', purpose: '비품이동',  weight: 2 },
+    { from: '축구단', to: 'DSR', purpose: '비품이동',   weight: 1 },
+    { from: 'DSR',  to: '육상단', purpose: '비품이동',  weight: 1 },
+    { from: '미캠',  to: '에듀',   purpose: '비품이동',  weight: 2 },
+    { from: '에듀',  to: '미캠',   purpose: '비품이동',  weight: 1 },
+  ];
+
+  // 근무자별 주 담당 경로 패턴 (패턴 차이를 보여주기 위해)
+  const workerPatterns = {
+    '최관영': { routeSlice: [0, 12], hourOffset: 0 },    // 주로 기흥↔화성 식자재
+    '김민수': { routeSlice: [4, 14], hourOffset: 0.5 },  // 주로 SR3↔H1, 비품
+    '박지훈': { routeSlice: [8, 18], hourOffset: 1 },    // 주로 외부, 화성2
+  };
+
+  const logs = [];
+  const today = new Date();
+  const baseHours = [7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 12, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17];
+
+  for (let d = 0; d < 30; d++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - d);
+    if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+    // 각 근무자별 이동 기록 생성
+    WORKERS.forEach(worker => {
+      const pattern = workerPatterns[worker];
+      const workerRoutes = routes.slice(pattern.routeSlice[0], pattern.routeSlice[1]);
+      const dailyRoutes = shuffle([...workerRoutes]).slice(0, 3 + Math.floor(Math.random() * 4));
+
+      dailyRoutes.forEach((route, i) => {
+        const hour = baseHours[i % baseHours.length] + pattern.hourOffset + (Math.random() * 0.4 - 0.2);
+        const h = Math.floor(hour);
+        const m = Math.floor((hour - h) * 60);
+        const logDate = new Date(date);
+        logDate.setHours(h, m, 0, 0);
+
+        const gapMin = 5 + Math.floor(Math.random() * 35);
+
+        logs.push({
+          id: `log-${d}-${worker}-${i}`,
+          checkin_at: logDate.toISOString(),
+          from: route.from,
+          to: route.to,
+          purpose: route.purpose,
+          gap_min: gapMin,
+          date: formatDateStr(logDate),
+          hour: h,
+          user_name: worker,
+        });
+      });
+    });
+  }
+
+  return logs.sort((a, b) => new Date(a.checkin_at) - new Date(b.checkin_at));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function formatDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════════════════
+let map;
+let allLogs = [];
+let filteredLogs = [];
+let currentPeriod = 'today';
+let currentTimeFilter = 'all';
+let currentView = 'markers';
+let currentWorker = 'all';
+
+// Layers
+let markerLayer;
+let routeLayer;
+let heatLayer;
+let animLayer;
+
+// Timeline
+let timelineActive = false;
+let timelineIdx = 0;
+let timelineInterval = null;
+let timelineSpeed = 1;
+let todayLogs = [];
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  initApp();
+});
+
+function initApp() {
+  setTopDate();
+  allLogs = generateDemoData();
+  populateWorkerSelect();
+  initMap();
+  applyFilters();
+  showToast('데모 데이터로 분석 중입니다');
+}
+
+function populateWorkerSelect() {
+  const select = document.getElementById('workerSelect');
+  const workers = [...new Set(allLogs.map(l => l.user_name))].sort();
+  workers.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+}
+
+function setWorker(worker) {
+  currentWorker = worker;
+  const badge = document.getElementById('currentWorkerBadge');
+  if (worker === 'all') {
+    badge.style.display = 'none';
+  } else {
+    badge.textContent = `👤 ${worker}`;
+    badge.style.display = 'inline-flex';
+  }
+  resetTimeline();
+  applyFilters();
+}
+
+function setTopDate() {
+  const d = new Date();
+  const day = ['일','월','화','수','목','금','토'][d.getDay()];
+  document.getElementById('topDate').textContent =
+    `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${day})`;
+}
+
+// ══════════════════════════════════════════════════
+// MAP SETUP
+// ══════════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', {
+    center: [37.213, 127.050],
+    zoom: 13,
+    zoomControl: true,
+    attributionControl: true,
+  });
+
+  // CartoDB DarkMatter tiles (free, dark theme)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
+  markerLayer = L.layerGroup().addTo(map);
+  routeLayer  = L.layerGroup().addTo(map);
+  animLayer   = L.layerGroup().addTo(map);
+}
+
+// ══════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════
+function setPeriod(period, el) {
+  currentPeriod = period;
+  document.querySelectorAll('#periodPills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  resetTimeline();
+  applyFilters();
+}
+
+function setTimeFilter(tf, el) {
+  currentTimeFilter = tf;
+  document.querySelectorAll('#timePills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+function setView(view, el) {
+  currentView = view;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderMap();
+}
+
+function applyFilters() {
+  const today = formatDateStr(new Date());
+  const now = new Date();
+
+  // Week start (Monday)
+  const weekStart = new Date(now);
+  const dayOfWeek = weekStart.getDay();
+  weekStart.setDate(weekStart.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const weekStr = formatDateStr(weekStart);
+
+  // Month start
+  const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  filteredLogs = allLogs.filter(log => {
+    // Worker filter
+    if (currentWorker !== 'all' && log.user_name !== currentWorker) return false;
+
+    // Period filter
+    if (currentPeriod === 'today' && log.date !== today) return false;
+    if (currentPeriod === 'week' && log.date < weekStr) return false;
+    if (currentPeriod === 'month' && !log.date.startsWith(monthStr)) return false;
+
+    // Time filter
+    if (currentTimeFilter === 'morning' && (log.hour < 6 || log.hour >= 12)) return false;
+    if (currentTimeFilter === 'afternoon' && (log.hour < 12 || log.hour >= 18)) return false;
+    if (currentTimeFilter === 'evening' && (log.hour < 18 && log.hour >= 6)) return false;
+
+    return true;
+  });
+
+  updateStats();
+  renderMap();
+  setupTimeline();
+  renderGantt();
+  renderPrint();
+}
+
+// ══════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════
+function updateStats() {
+  const total = filteredLogs.length;
+  const siteSet = new Set();
+  filteredLogs.forEach(l => { siteSet.add(l.from); siteSet.add(l.to); });
+
+  const avgGap = total > 0
+    ? Math.round(filteredLogs.reduce((s, l) => s + l.gap_min, 0) / total)
+    : 0;
+  const gaps = filteredLogs.filter(l => l.gap_min >= 30).length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statSites').textContent = siteSet.size;
+  document.getElementById('statAvgTime').textContent = avgGap;
+  document.getElementById('statGaps').textContent = gaps;
+
+  // Top routes
+  const routeCount = {};
+  filteredLogs.forEach(l => {
+    const key = `${l.from}→${l.to}`;
+    routeCount[key] = (routeCount[key] || 0) + 1;
+  });
+  const sorted = Object.entries(routeCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const maxCount = sorted.length ? sorted[0][1] : 1;
+
+  document.getElementById('topRoutes').innerHTML = sorted.map(([route, count], i) => {
+    const rankClass = `r${i + 1}`;
+    const pct = Math.round((count / maxCount) * 100);
+    return `
+      <div class="route-row fade-in" style="animation-delay:${i * 0.06}s" onclick="highlightRoute('${route}')">
+        <div class="route-rank ${rankClass}">${i + 1}</div>
+        <div class="route-info">
+          <div class="route-name">${route}</div>
+          <div class="route-meta">${count}회 이동</div>
+        </div>
+        <div class="route-bar-track"><div class="route-bar-fill" style="width:${pct}%"></div></div>
+        <div class="route-count">${count}</div>
+      </div>`;
+  }).join('');
+
+  // Site visits
+  const siteCount = {};
+  filteredLogs.forEach(l => {
+    siteCount[l.to] = (siteCount[l.to] || 0) + 1;
+  });
+  const siteSorted = Object.entries(siteCount)
+    .sort((a, b) => b[1] - a[1]);
+
+  document.getElementById('siteVisits').innerHTML = siteSorted.map(([name, count], i) => {
+    const coord = SITE_COORDS[name];
+    const region = coord ? coord.region : '기타';
+    const color = REGION_COLORS[region] || '#888';
+    return `
+      <div class="site-row fade-in" style="animation-delay:${i * 0.04}s" onclick="focusSite('${name}')">
+        <div class="site-dot" style="background:${color}"></div>
+        <div class="site-info">
+          <div class="site-name">${name}</div>
+          <div class="site-region">${region}</div>
+        </div>
+        <div class="site-visits" style="color:${color}">${count}</div>
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// MAP RENDERING
+// ══════════════════════════════════════════════════
+function renderMap() {
+  markerLayer.clearLayers();
+  routeLayer.clearLayers();
+  if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+
+  if (currentView === 'markers' || currentView === 'routes') {
+    renderMarkers();
+  }
+  if (currentView === 'routes') {
+    renderRoutes();
+  }
+  if (currentView === 'heatmap') {
+    renderHeatmap();
+  }
+}
+
+function renderMarkers() {
+  // Count visits per site
+  const visitCount = {};
+  filteredLogs.forEach(l => {
+    visitCount[l.to] = (visitCount[l.to] || 0) + 1;
+    if (!visitCount[l.from]) visitCount[l.from] = 0;
+  });
+
+  const maxVisits = Math.max(...Object.values(visitCount), 1);
+
+  Object.entries(SITE_COORDS).forEach(([name, coord]) => {
+    const count = visitCount[name] || 0;
+    const color = REGION_COLORS[coord.region] || '#888';
+    const baseRadius = 8;
+    const radius = baseRadius + (count / maxVisits) * 22;
+    const opacity = 0.3 + (count / maxVisits) * 0.5;
+
+    // Outer glow circle
+    if (count > 0) {
+      L.circleMarker([coord.lat, coord.lng], {
+        radius: radius + 6,
+        fillColor: color,
+        fillOpacity: opacity * 0.2,
+        color: color,
+        weight: 0,
+      }).addTo(markerLayer);
+    }
+
+    // Main circle
+    const marker = L.circleMarker([coord.lat, coord.lng], {
+      radius: Math.max(radius, 6),
+      fillColor: color,
+      fillOpacity: opacity,
+      color: color,
+      weight: 2,
+      opacity: 0.8,
+    }).addTo(markerLayer);
+
+    // Label
+    const labelIcon = L.divIcon({
+      className: '',
+      html: `<div style="
+        color: ${color};
+        font-family: var(--font);
+        font-size: 11px;
+        font-weight: 800;
+        text-shadow: 0 0 8px rgba(0,0,0,0.9), 0 0 3px rgba(0,0,0,1);
+        white-space: nowrap;
+        text-align: center;
+        transform: translateY(${radius + 8}px);
+      ">${name}${count > 0 ? ` (${count})` : ''}</div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    });
+    L.marker([coord.lat, coord.lng], { icon: labelIcon, interactive: false }).addTo(markerLayer);
+
+    // Popup
+    marker.bindPopup(`
+      <div class="active-route-popup">
+        <div class="popup-title">${name}</div>
+        <div class="popup-meta">${coord.region} 지역</div>
+        <div class="popup-stat">
+          <div class="popup-stat-item">
+            <div class="popup-stat-val" style="color:${color}">${count}</div>
+            <div class="popup-stat-label">방문 횟수</div>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function renderRoutes() {
+  const routeData = {};
+  filteredLogs.forEach(l => {
+    if (!SITE_COORDS[l.from] || !SITE_COORDS[l.to]) return;
+    const key = `${l.from}→${l.to}`;
+    if (!routeData[key]) routeData[key] = { from: l.from, to: l.to, count: 0 };
+    routeData[key].count++;
+  });
+
+  const maxRoute = Math.max(...Object.values(routeData).map(r => r.count), 1);
+
+  Object.values(routeData).forEach(route => {
+    const fromCoord = SITE_COORDS[route.from];
+    const toCoord = SITE_COORDS[route.to];
+    if (!fromCoord || !toCoord) return;
+
+    const fromRegion = fromCoord.region;
+    const color = REGION_COLORS[fromRegion] || '#888';
+    const thickness = 1.5 + (route.count / maxRoute) * 5;
+    const opacity = 0.3 + (route.count / maxRoute) * 0.5;
+
+    // Create Bezier curve
+    const points = getBezierCurve(
+      [fromCoord.lat, fromCoord.lng],
+      [toCoord.lat, toCoord.lng],
+      20
+    );
+
+    const polyline = L.polyline(points, {
+      color: color,
+      weight: thickness,
+      opacity: opacity,
+      smoothFactor: 1,
+      dashArray: route.count < 3 ? '6 8' : null,
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(routeLayer);
+
+    // Arrow at endpoint
+    const arrowIdx = Math.floor(points.length * 0.75);
+    if (arrowIdx > 0 && arrowIdx < points.length) {
+      const arrowIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+          color: ${color};
+          font-size: ${10 + thickness}px;
+          opacity: ${opacity};
+          transform: rotate(${getAngle(points[arrowIdx-1], points[arrowIdx])}deg);
+          text-shadow: 0 0 6px rgba(0,0,0,0.8);
+        ">▸</div>`,
+        iconSize: [0, 0],
+      });
+      L.marker(points[arrowIdx], { icon: arrowIcon, interactive: false }).addTo(routeLayer);
+    }
+
+    // Route popup
+    polyline.bindPopup(`
+      <div class="active-route-popup">
+        <div class="popup-title">${route.from} → ${route.to}</div>
+        <div class="popup-stat">
+          <div class="popup-stat-item">
+            <div class="popup-stat-val">${route.count}</div>
+            <div class="popup-stat-label">이동 횟수</div>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function renderHeatmap() {
+  // Also show markers in muted form
+  renderMarkers();
+
+  const heatPoints = [];
+  filteredLogs.forEach(l => {
+    const coord = SITE_COORDS[l.to];
+    if (coord) {
+      heatPoints.push([coord.lat, coord.lng, 1]);
+    }
+    const fromCoord = SITE_COORDS[l.from];
+    if (fromCoord) {
+      heatPoints.push([fromCoord.lat, fromCoord.lng, 0.5]);
+    }
+  });
+
+  heatLayer = L.heatLayer(heatPoints, {
+    radius: 35,
+    blur: 20,
+    maxZoom: 16,
+    max: 1.0,
+    gradient: {
+      0.1: '#0d0887',
+      0.3: '#6a00a8',
+      0.5: '#b12a90',
+      0.7: '#e16462',
+      0.85: '#fca636',
+      1.0: '#f0f921',
+    },
+  }).addTo(map);
+}
+
+// ══════════════════════════════════════════════════
+// BEZIER CURVE HELPER
+// ══════════════════════════════════════════════════
+function getBezierCurve(from, to, segments) {
+  const midLat = (from[0] + to[0]) / 2;
+  const midLng = (from[1] + to[1]) / 2;
+
+  // Perpendicular offset for curve
+  const dx = to[1] - from[1];
+  const dy = to[0] - from[0];
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const offset = dist * 0.2; // 20% offset
+
+  const controlLat = midLat + (dx / dist) * offset;
+  const controlLng = midLng - (dy / dist) * offset;
+
+  const points = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const lat = (1-t)*(1-t)*from[0] + 2*(1-t)*t*controlLat + t*t*to[0];
+    const lng = (1-t)*(1-t)*from[1] + 2*(1-t)*t*controlLng + t*t*to[1];
+    points.push([lat, lng]);
+  }
+  return points;
+}
+
+function getAngle(p1, p2) {
+  const dy = p2[0] - p1[0];
+  const dx = p2[1] - p1[1];
+  return Math.atan2(dy, dx) * (180 / Math.PI) - 90;
+}
+
+// ══════════════════════════════════════════════════
+// TIMELINE ANIMATION
+// ══════════════════════════════════════════════════
+function setupTimeline() {
+  const today = formatDateStr(new Date());
+  todayLogs = filteredLogs.filter(l => l.date === today);
+
+  const dotsEl = document.getElementById('tlDots');
+  dotsEl.innerHTML = '';
+
+  if (todayLogs.length === 0) {
+    document.getElementById('tlTime').textContent = '--:--';
+    return;
+  }
+
+  // Place dots on timeline
+  const firstTime = new Date(todayLogs[0].checkin_at).getTime();
+  const lastTime = new Date(todayLogs[todayLogs.length - 1].checkin_at).getTime();
+  const range = lastTime - firstTime || 1;
+
+  todayLogs.forEach((log, i) => {
+    const t = new Date(log.checkin_at).getTime();
+    const pct = ((t - firstTime) / range) * 100;
+    const dot = document.createElement('div');
+    dot.className = 'tl-dot';
+    dot.style.left = `${pct}%`;
+    dot.title = `${formatTime(log.checkin_at)} ${log.from}→${log.to}`;
+    dotsEl.appendChild(dot);
+  });
+
+  document.getElementById('tlTime').textContent = formatTime(todayLogs[0].checkin_at);
+}
+
+function toggleTimeline() {
+  if (todayLogs.length === 0) {
+    showToast('오늘 이동 기록이 없습니다');
+    return;
+  }
+
+  if (timelineActive) {
+    pauseTimeline();
+  } else {
+    playTimeline();
+  }
+}
+
+function playTimeline() {
+  timelineActive = true;
+  document.getElementById('tlPlay').textContent = '⏸';
+
+  if (timelineIdx >= todayLogs.length) timelineIdx = 0;
+
+  const speeds = [1500, 800, 400];
+  const interval = speeds[timelineSpeed - 1] || 1500;
+
+  timelineInterval = setInterval(() => {
+    if (timelineIdx >= todayLogs.length) {
+      pauseTimeline();
+      return;
+    }
+    showTimelineStep(timelineIdx);
+    timelineIdx++;
+  }, interval);
+}
+
+function pauseTimeline() {
+  timelineActive = false;
+  document.getElementById('tlPlay').textContent = '▶';
+  if (timelineInterval) clearInterval(timelineInterval);
+}
+
+function resetTimeline() {
+  pauseTimeline();
+  timelineIdx = 0;
+  animLayer.clearLayers();
+  document.getElementById('tlFill').style.width = '0%';
+  document.getElementById('tlTime').textContent = '--:--';
+}
+
+function showTimelineStep(idx) {
+  const log = todayLogs[idx];
+  const fromCoord = SITE_COORDS[log.from];
+  const toCoord = SITE_COORDS[log.to];
+
+  // Update timeline bar
+  const pct = ((idx + 1) / todayLogs.length) * 100;
+  document.getElementById('tlFill').style.width = `${pct}%`;
+  document.getElementById('tlTime').textContent = formatTime(log.checkin_at);
+
+  // Mark dots as passed
+  const dots = document.querySelectorAll('.tl-dot');
+  dots.forEach((d, i) => d.classList.toggle('passed', i <= idx));
+
+  if (!fromCoord || !toCoord) return;
+
+  // Animate route on map
+  const color = REGION_COLORS[fromCoord.region] || '#00e5ff';
+  const points = getBezierCurve(
+    [fromCoord.lat, fromCoord.lng],
+    [toCoord.lat, toCoord.lng],
+    20
+  );
+
+  // Route line
+  L.polyline(points, {
+    color: color,
+    weight: 4,
+    opacity: 0.8,
+    dashArray: '8 6',
+    className: 'route-animated',
+  }).addTo(animLayer);
+
+  // Destination pulse
+  const pulseIcon = L.divIcon({
+    className: '',
+    html: `<div style="
+      width: 16px; height: 16px;
+      background: ${color};
+      border-radius: 50%;
+      box-shadow: 0 0 20px ${color}, 0 0 40px ${color}40;
+      position: relative;
+    ">
+      <div style="
+        position: absolute; inset: -8px;
+        border: 2px solid ${color};
+        border-radius: 50%;
+        opacity: 0.5;
+        animation: pulse-ring 1.5s ease-out infinite;
+      "></div>
+    </div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+  L.marker([toCoord.lat, toCoord.lng], { icon: pulseIcon }).addTo(animLayer);
+
+  // Show info toast
+  showToast(`${formatTime(log.checkin_at)} | ${log.from} → ${log.to} (${log.purpose})`);
+}
+
+function seekTimeline(e) {
+  if (todayLogs.length === 0) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const idx = Math.min(Math.floor(pct * todayLogs.length), todayLogs.length - 1);
+
+  pauseTimeline();
+  animLayer.clearLayers();
+  timelineIdx = 0;
+
+  for (let i = 0; i <= idx; i++) {
+    showTimelineStep(i);
+  }
+  timelineIdx = idx + 1;
+}
+
+function cycleSpeed() {
+  timelineSpeed = (timelineSpeed % 3) + 1;
+  document.getElementById('tlSpeed').textContent = `${timelineSpeed}×`;
+
+  if (timelineActive) {
+    clearInterval(timelineInterval);
+    const speeds = [1500, 800, 400];
+    timelineInterval = setInterval(() => {
+      if (timelineIdx >= todayLogs.length) {
+        pauseTimeline();
+        return;
+      }
+      showTimelineStep(timelineIdx);
+      timelineIdx++;
+    }, speeds[timelineSpeed - 1]);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// INTERACTIONS
+// ══════════════════════════════════════════════════
+function highlightRoute(routeStr) {
+  const [from, to] = routeStr.split('→');
+  const fromCoord = SITE_COORDS[from];
+  const toCoord = SITE_COORDS[to];
+  if (!fromCoord || !toCoord) return;
+
+  // Fit map to route bounds
+  const bounds = L.latLngBounds([
+    [fromCoord.lat, fromCoord.lng],
+    [toCoord.lat, toCoord.lng]
+  ]);
+  map.fitBounds(bounds.pad(0.3));
+
+  // Flash effect
+  const color = REGION_COLORS[fromCoord.region] || '#00e5ff';
+  const points = getBezierCurve(
+    [fromCoord.lat, fromCoord.lng],
+    [toCoord.lat, toCoord.lng],
+    20
+  );
+
+  const flash = L.polyline(points, {
+    color: '#ffffff',
+    weight: 8,
+    opacity: 0.6,
+  }).addTo(routeLayer);
+
+  setTimeout(() => routeLayer.removeLayer(flash), 800);
+}
+
+function focusSite(name) {
+  const coord = SITE_COORDS[name];
+  if (!coord) return;
+  map.flyTo([coord.lat, coord.lng], 15, { duration: 0.8 });
+}
+
+// ══════════════════════════════════════════════════
+// MOBILE PANEL
+// ══════════════════════════════════════════════════
+function togglePanel() {
+  const panel = document.getElementById('sidePanel');
+  const overlay = document.getElementById('panelOverlay');
+  panel.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function formatTime(iso) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+// ══════════════════════════════════════════════════
+// GANTT & PRINT
+// ══════════════════════════════════════════════════
+function renderGantt() {
+  const gSec = document.getElementById('ganttSection');
+  const gRow = document.getElementById('ganttRow');
+  if (currentWorker === 'all') {
+    gSec.style.display = 'none';
+    return;
+  }
+  gSec.style.display = 'block';
+  gRow.innerHTML = '';
+
+  // 07:00 ~ 16:00 = 9시간 (540분)
+  const shiftStart = 7 * 60; // 420
+  const totalShift = 9 * 60; // 540
+
+  let prevEndTime = shiftStart; 
+
+  // 현재 필터링된 로그들을 시간순 정렬
+  const workerLogs = [...filteredLogs].sort((a,b) => {
+    const aMin = parseInt(a.time.split(':')[0])*60 + parseInt(a.time.split(':')[1]);
+    const bMin = parseInt(b.time.split(':')[0])*60 + parseInt(b.time.split(':')[1]);
+    return aMin - bMin;
+  });
+
+  workerLogs.forEach(log => {
+    const arrTime = parseInt(log.time.split(':')[0])*60 + parseInt(log.time.split(':')[1]);
+    if (arrTime < shiftStart || arrTime > shiftStart + totalShift) return;
+
+    // 표준 업무/이동 시간 정의 (추후 실제 데이터 기반으로 고도화 가능)
+    const STD_TRANSIT = 18;
+    const STD_STAY = 30;
+
+    const actualGap = arrTime - prevEndTime;
+    let gapTime = 0;
+    
+    // 이전 위치가 있었다면, 이동에 시간이 소요됨
+    // prevEndTime -> (gapTime) -> (transit) -> arrTime
+    if (actualGap > STD_TRANSIT) {
+      gapTime = actualGap - STD_TRANSIT;
+    }
+
+    // 1. 미소명 갭 (빨간색)
+    if (gapTime > 0) {
+      const gPct = (gapTime / totalShift) * 100;
+      const gLeft = ((prevEndTime - shiftStart) / totalShift) * 100;
+      const block = document.createElement('div');
+      block.className = 'gantt-block gap';
+      block.style.left = gLeft + '%';
+      block.style.width = gPct + '%';
+      block.textContent = gapTime > 15 ? '의심' : '';
+      block.title = `의심공백: ${gapTime}분`;
+      gRow.appendChild(block);
+    }
+
+    // 2. 이동 (초록색)
+    const transitTime = Math.min(actualGap, STD_TRANSIT);
+    if (transitTime > 0) {
+      const tPct = (transitTime / totalShift) * 100;
+      const tLeft = (((prevEndTime + gapTime) - shiftStart) / totalShift) * 100;
+      const tBlock = document.createElement('div');
+      tBlock.className = 'gantt-block transit';
+      tBlock.style.left = tLeft + '%';
+      tBlock.style.width = tPct + '%';
+      tBlock.textContent = '이동';
+      tBlock.title = `이동(${log.from}→${log.to}): ${transitTime}분`;
+      gRow.appendChild(tBlock);
+    }
+
+    // 3. 체류/업무 (파란색)
+    let stayTime = STD_STAY;
+    const sPct = (stayTime / totalShift) * 100;
+    const sLeft = ((arrTime - shiftStart) / totalShift) * 100;
+    const sBlock = document.createElement('div');
+    sBlock.className = 'gantt-block work';
+    sBlock.style.left = sLeft + '%';
+    sBlock.style.width = sPct + '%';
+    sBlock.textContent = log.to;
+    sBlock.title = `업무(${log.to}): ${stayTime}분`;
+    gRow.appendChild(sBlock);
+
+    prevEndTime = arrTime + stayTime;
+  });
+}
+
+function renderPrint() {
+  const tbody = document.getElementById('printTbody');
+  tbody.innerHTML = '';
+  
+  const workerLogs = currentWorker === 'all' ? filteredLogs : filteredLogs.filter(l => l.user_name === currentWorker);
+  workerLogs.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+  workerLogs.forEach(log => {
+    // 출발시간 역산 (도착시간 - gap_min)
+    const arrH = parseInt(log.time.split(':')[0]);
+    const arrM = parseInt(log.time.split(':')[1]);
+    let depDate = new Date(0, 0, 0, arrH, arrM - log.gap_min);
+    let depTimeStr = `${String(depDate.getHours()).padStart(2,'0')}:${String(depDate.getMinutes()).padStart(2,'0')}`;
+    if (log.gap_min === 0) depTimeStr = '-';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${log.date}</td>
+      <td>${log.user_name}</td>
+      <td>${depTimeStr}</td>
+      <td>${log.time}</td>
+      <td>${log.from}</td>
+      <td>${log.to}</td>
+      <td>${log.purpose}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function printLog() {
+  if (currentWorker === 'all') {
+    if (!confirm("전체 근무자의 운행일지를 출력하시겠습니까?\\n(특정 근무자를 먼저 선택하는 것을 권장합니다)")) return;
+  }
+  window.print();
+}
+</script>
+
+</body>
+</html>
