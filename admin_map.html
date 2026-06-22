@@ -469,21 +469,26 @@
     ══════════════════════════════════════════════ */
     .gantt-wrap { margin-top: 10px; }
     .gantt-row {
-      position: relative; height: 28px; background: rgba(255,255,255,0.03);
-      border-radius: 4px; overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border);
+      position: relative; height: 52px; background: rgba(255,255,255,0.03);
+      border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border);
     }
     .gantt-block {
       position: absolute; top: 0; bottom: 0;
-      border-right: 1px solid rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      border-right: 1px solid rgba(0,0,0,0.2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer; transition: filter 0.15s;
+      padding: 2px 3px;
     }
-    .gantt-block.work { background: rgba(0, 229, 255, 0.4); border-bottom: 2px solid var(--cyan); }
-    .gantt-block.transit { background: rgba(0, 230, 118, 0.3); border-bottom: 2px solid var(--green); }
-    .gantt-block.gap { background: rgba(255, 82, 82, 0.4); border-bottom: 2px solid var(--red); color: #fff; }
+    .gantt-block:hover { filter: brightness(1.4); z-index: 10; }
+    .gantt-block .gantt-loc { font-size: 10px; font-weight: 900; line-height: 1.1; }
+    .gantt-block .gantt-time { font-size: 8px; font-weight: 600; opacity: 0.8; line-height: 1.1; }
+    .gantt-block.work { background: rgba(0, 229, 255, 0.45); border-bottom: 3px solid var(--cyan); }
+    .gantt-block.transit { background: rgba(0, 230, 118, 0.35); border-bottom: 3px solid var(--green); }
+    .gantt-block.gap { background: rgba(255, 82, 82, 0.45); border-bottom: 3px solid var(--red); color: #fff; }
     
-    .gantt-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); padding: 0 4px; font-weight: 700; margin-bottom: 4px; }
+    .gantt-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); padding: 0 4px; font-weight: 700; margin-bottom: 6px; }
 
     /* ══════════════════════════════════════════════
        PRINT STYLES
@@ -699,17 +704,20 @@
         <div class="gantt-wrap">
           <div class="gantt-labels">
             <span>07:00</span>
+            <span>09:00</span>
             <span>11:00</span>
+            <span>13:00</span>
             <span>15:00</span>
+            <span>17:00</span>
             <span>19:00</span>
           </div>
           <div class="gantt-row" id="ganttRow">
             <!-- Blocks injected here -->
           </div>
-          <div style="display:flex;gap:12px;font-size:9px;color:var(--text-dim);margin-top:8px;justify-content:center;">
-            <span style="color:var(--cyan);">■ 체류/업무</span>
-            <span style="color:var(--green);">■ 이동</span>
-            <span style="color:var(--red);">■ 미소명(의심공백)</span>
+          <div style="display:flex;gap:16px;font-size:10px;color:var(--text-dim);margin-top:10px;justify-content:center;font-weight:700;">
+            <span><span style="color:var(--cyan);font-size:13px;">■</span> 체류/업무</span>
+            <span><span style="color:var(--green);font-size:13px;">■</span> 이동</span>
+            <span><span style="color:var(--red);font-size:13px;">■</span> 미소명(의심공백)</span>
           </div>
         </div>
       </div>
@@ -1434,17 +1442,19 @@ function setupTimeline() {
 
   if (todayLogs.length === 0) {
     document.getElementById('tlTime').textContent = '--:--';
+    document.getElementById('tlFill').style.width = '0%';
     return;
   }
 
-  // Place dots on timeline
-  const firstTime = new Date(todayLogs[0].checkin_at).getTime();
-  const lastTime = new Date(todayLogs[todayLogs.length - 1].checkin_at).getTime();
-  const range = lastTime - firstTime || 1;
+  // 07:00~19:00 (12시간) 전체 근무 시간 기준으로 dot 배치
+  const shiftStartMin = 7 * 60;  // 420분
+  const shiftEndMin = 19 * 60;   // 1140분
+  const totalRange = shiftEndMin - shiftStartMin; // 720분
 
   todayLogs.forEach((log, i) => {
-    const t = new Date(log.checkin_at).getTime();
-    const pct = ((t - firstTime) / range) * 100;
+    const d = new Date(log.checkin_at);
+    const logMin = d.getHours() * 60 + d.getMinutes();
+    const pct = Math.max(0, Math.min(100, ((logMin - shiftStartMin) / totalRange) * 100));
     const dot = document.createElement('div');
     dot.className = 'tl-dot';
     dot.style.left = `${pct}%`;
@@ -1506,8 +1516,13 @@ function showTimelineStep(idx) {
   const fromCoord = SITE_COORDS[log.from];
   const toCoord = SITE_COORDS[log.to];
 
-  // Update timeline bar
-  const pct = ((idx + 1) / todayLogs.length) * 100;
+  // Update timeline bar — 07:00~19:00 기준 위치 계산
+  const shiftStartMin = 7 * 60;
+  const shiftEndMin = 19 * 60;
+  const totalRange = shiftEndMin - shiftStartMin;
+  const d = new Date(log.checkin_at);
+  const logMin = d.getHours() * 60 + d.getMinutes();
+  const pct = Math.max(0, Math.min(100, ((logMin - shiftStartMin) / totalRange) * 100));
   document.getElementById('tlFill').style.width = `${pct}%`;
   document.getElementById('tlTime').textContent = formatTime(log.checkin_at);
 
@@ -1681,22 +1696,32 @@ function renderGantt() {
     return aMin - bMin;
   });
 
-  workerLogs.forEach(log => {
+  workerLogs.forEach((log, idx) => {
     const arrTime = parseInt(log.time.split(':')[0])*60 + parseInt(log.time.split(':')[1]);
     if (arrTime < shiftStart || arrTime > shiftStart + totalShift) return;
 
-    // 표준 업무/이동 시간 정의 (추후 실제 데이터 기반으로 고도화 가능)
-    const STD_TRANSIT = 18;
-    const STD_STAY = 30;
+    // 이동 시간: 실제 gap_min이 있으면 사용, 없으면 추정 18분
+    const STD_TRANSIT = log.gap_min > 0 ? Math.min(log.gap_min, 20) : 18;
+    // 체류 시간: 다음 로그까지의 시간 - 이동시간, 없으면 기본 30분
+    let stayTime = 30;
+    if (idx < workerLogs.length - 1) {
+      const nextArr = parseInt(workerLogs[idx+1].time.split(':')[0])*60 + parseInt(workerLogs[idx+1].time.split(':')[1]);
+      const nextTransit = workerLogs[idx+1].gap_min > 0 ? Math.min(workerLogs[idx+1].gap_min, 20) : 18;
+      stayTime = Math.max(5, nextArr - arrTime - nextTransit);
+    } else {
+      // 마지막 로그: 퇴근(19:00)까지 또는 최소 30분
+      stayTime = Math.max(30, (shiftStart + totalShift) - arrTime);
+    }
 
     const actualGap = arrTime - prevEndTime;
     let gapTime = 0;
     
-    // 이전 위치가 있었다면, 이동에 시간이 소요됨
-    // prevEndTime -> (gapTime) -> (transit) -> arrTime
     if (actualGap > STD_TRANSIT) {
       gapTime = actualGap - STD_TRANSIT;
     }
+
+    // 시간 포맷 헬퍼
+    const minToTime = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 
     // 1. 미소명 갭 (빨간색)
     if (gapTime > 0) {
@@ -1706,8 +1731,10 @@ function renderGantt() {
       block.className = 'gantt-block gap';
       block.style.left = gLeft + '%';
       block.style.width = gPct + '%';
-      block.textContent = gapTime > 15 ? '의심' : '';
-      block.title = `의심공백: ${gapTime}분`;
+      block.innerHTML = gapTime > 10 
+        ? `<span class="gantt-loc">${gapTime}분</span><span class="gantt-time">의심공백</span>` 
+        : '';
+      block.title = `⚠️ 의심공백: ${gapTime}분 (${minToTime(prevEndTime)} ~ ${minToTime(prevEndTime + gapTime)})`;
       gRow.appendChild(block);
     }
 
@@ -1720,21 +1747,20 @@ function renderGantt() {
       tBlock.className = 'gantt-block transit';
       tBlock.style.left = tLeft + '%';
       tBlock.style.width = tPct + '%';
-      tBlock.textContent = '이동';
-      tBlock.title = `이동(${log.from}→${log.to}): ${transitTime}분`;
+      tBlock.innerHTML = transitTime > 8 ? `<span class="gantt-loc">→</span>` : '';
+      tBlock.title = `🚗 이동: ${log.from} → ${log.to} (${transitTime}분)`;
       gRow.appendChild(tBlock);
     }
 
     // 3. 체류/업무 (파란색)
-    let stayTime = STD_STAY;
-    const sPct = (stayTime / totalShift) * 100;
+    const sPct = Math.min((stayTime / totalShift) * 100, ((shiftStart + totalShift - arrTime) / totalShift) * 100);
     const sLeft = ((arrTime - shiftStart) / totalShift) * 100;
     const sBlock = document.createElement('div');
     sBlock.className = 'gantt-block work';
     sBlock.style.left = sLeft + '%';
     sBlock.style.width = sPct + '%';
-    sBlock.textContent = log.to;
-    sBlock.title = `업무(${log.to}): ${stayTime}분`;
+    sBlock.innerHTML = `<span class="gantt-loc">${log.to}</span><span class="gantt-time">${minToTime(arrTime)}</span>`;
+    sBlock.title = `📍 ${log.to} | ${minToTime(arrTime)} ~ ${minToTime(arrTime + stayTime)} (${stayTime}분 체류)`;
     gRow.appendChild(sBlock);
 
     prevEndTime = arrTime + stayTime;
