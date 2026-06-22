@@ -581,7 +581,6 @@
     <thead>
       <tr>
         <th>일자</th>
-        <th>근무자</th>
         <th>출발시간</th>
         <th>도착시간</th>
         <th>출발지</th>
@@ -607,7 +606,6 @@
     </div>
     <div class="top-right">
       <button class="btn-print" onclick="printLog()">🖨️ 일지 출력</button>
-      <span class="worker-badge" id="currentWorkerBadge" style="display:none;">👤 전체</span>
       <div class="top-badge">관리자</div>
     </div>
   </div>
@@ -621,13 +619,6 @@
     <!-- ═══ SIDE PANEL ═══ -->
     <div class="side-panel" id="sidePanel">
 
-      <!-- Worker Filter -->
-      <div class="panel-section">
-        <div class="section-label">👤 근무자 선택</div>
-        <select class="worker-select" id="workerSelect" onchange="setWorker(this.value)">
-          <option value="all">전체 근무자</option>
-        </select>
-      </div>
 
       <!-- View Mode -->
       <div class="panel-section">
@@ -703,14 +694,14 @@
       </div>
 
       <!-- Gantt Chart -->
-      <div class="panel-section" id="ganttSection" style="display:none;">
-        <div class="section-label">⏱️ 근무 성실도 타임라인 (07:00 ~ 16:00)</div>
+      <div class="panel-section" id="ganttSection">
+        <div class="section-label">⏱️ 근무 성실도 타임라인 (07:00 ~ 19:00)</div>
         <div class="gantt-wrap">
           <div class="gantt-labels">
             <span>07:00</span>
-            <span>10:00</span>
-            <span>13:00</span>
-            <span>16:00</span>
+            <span>11:00</span>
+            <span>15:00</span>
+            <span>19:00</span>
           </div>
           <div class="gantt-row" id="ganttRow">
             <!-- Blocks injected here -->
@@ -1008,32 +999,17 @@ function onDataLoaded(data) {
   });
 
   populateWorkerSelect();
+  // populateWorkerSelect();
   applyFilters();
   showToast('데이터 로딩 완료 (연동성공)');
 }
 
 function populateWorkerSelect() {
-  const select = document.getElementById('workerSelect');
-  const workers = [...new Set(allLogs.map(l => l.user_name))].sort();
-  workers.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
-  });
+  // 근무자 필터 제거됨
 }
 
 function setWorker(worker) {
-  currentWorker = worker;
-  const badge = document.getElementById('currentWorkerBadge');
-  if (worker === 'all') {
-    badge.style.display = 'none';
-  } else {
-    badge.textContent = `👤 ${worker}`;
-    badge.style.display = 'inline-flex';
-  }
-  resetTimeline();
-  applyFilters();
+  // 근무자 필터 제거됨
 }
 
 function setTopDate() {
@@ -1106,9 +1082,6 @@ function applyFilters() {
   const monthStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
 
   filteredLogs = allLogs.filter(log => {
-    // Worker filter
-    if (currentWorker !== 'all' && log.user_name !== currentWorker) return false;
-
     // Period filter
     if (currentPeriod === 'today' && log.date !== today) return false;
     if (currentPeriod === 'week' && log.date < weekStr) return false;
@@ -1665,16 +1638,12 @@ function showToast(msg) {
 function renderGantt() {
   const gSec = document.getElementById('ganttSection');
   const gRow = document.getElementById('ganttRow');
-  if (currentWorker === 'all') {
-    gSec.style.display = 'none';
-    return;
-  }
   gSec.style.display = 'block';
   gRow.innerHTML = '';
 
-  // 07:00 ~ 16:00 = 9시간 (540분)
+  // 07:00 ~ 19:00 = 12시간 (720분)
   const shiftStart = 7 * 60; // 420
-  const totalShift = 9 * 60; // 540
+  const totalShift = 12 * 60; // 720
 
   let prevEndTime = shiftStart; 
 
@@ -1763,7 +1732,6 @@ function renderPrint() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${log.date}</td>
-      <td>${log.user_name}</td>
       <td>${depTimeStr}</td>
       <td>${log.time}</td>
       <td>${log.from}</td>
@@ -1775,9 +1743,6 @@ function renderPrint() {
 }
 
 function printLog() {
-  if (currentWorker === 'all') {
-    if (!confirm("전체 근무자의 운행일지를 출력하시겠습니까?\\n(특정 근무자를 먼저 선택하는 것을 권장합니다)")) return;
-  }
   window.print();
 }
 </script>
