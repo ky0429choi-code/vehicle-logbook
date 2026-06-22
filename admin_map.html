@@ -465,30 +465,136 @@
     .popup-stat-label { font-size: 9px; color: var(--text-dim); font-weight: 700; }
 
     /* ══════════════════════════════════════════════
-       GANTT CHART
+       AVG TRAVEL TIME TABLE
+    ══════════════════════════════════════════════ */
+    .avg-travel-wrap { margin-top: 8px; }
+    .avg-travel-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 11px;
+    }
+    .avg-travel-table thead th {
+      font-size: 9px; font-weight: 800; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 6px 6px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .avg-travel-table thead th:last-child,
+    .avg-travel-table thead th:nth-child(3),
+    .avg-travel-table thead th:nth-child(4) { text-align: center; }
+    .avg-travel-table tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
+      cursor: pointer;
+    }
+    .avg-travel-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+    .avg-travel-table td {
+      padding: 7px 6px; vertical-align: middle;
+    }
+    .avg-travel-table td:last-child,
+    .avg-travel-table td:nth-child(3),
+    .avg-travel-table td:nth-child(4) { text-align: center; }
+    .at-route {
+      font-weight: 700; color: var(--text); font-size: 11px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 130px;
+    }
+    .at-avg {
+      font-weight: 900; font-size: 13px; color: var(--cyan);
+      font-variant-numeric: tabular-nums;
+    }
+    .at-range {
+      font-size: 9px; font-weight: 700; color: var(--text-dim);
+    }
+    .at-count {
+      font-size: 10px; font-weight: 700; color: var(--text-muted);
+    }
+    .at-bar {
+      height: 4px; border-radius: 4px; background: rgba(255,255,255,0.06);
+      margin-top: 3px; overflow: hidden;
+    }
+    .at-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+    }
+    .at-empty {
+      padding: 16px; text-align: center; font-size: 11px;
+      color: var(--text-dim); font-weight: 600;
+    }
+    .at-notice {
+      margin-top: 10px; padding: 10px 12px;
+      background: rgba(0,229,255,0.06);
+      border: 1px solid rgba(0,229,255,0.15);
+      border-radius: 8px; font-size: 10px;
+      color: var(--text-muted); font-weight: 600;
+      line-height: 1.5;
+    }
+    .at-notice strong { color: var(--cyan); font-weight: 800; }
+
+    /* ══════════════════════════════════════════════
+       GANTT CHART (slim color bar + vertical list)
     ══════════════════════════════════════════════ */
     .gantt-wrap { margin-top: 10px; }
     .gantt-row {
-      position: relative; height: 52px; background: rgba(255,255,255,0.03);
-      border-radius: 6px; overflow: hidden; margin-bottom: 8px; border: 1px solid var(--border);
+      position: relative; height: 22px; background: rgba(255,255,255,0.03);
+      border-radius: 6px; overflow: hidden; margin-bottom: 4px; border: 1px solid var(--border);
     }
     .gantt-block {
       position: absolute; top: 0; bottom: 0;
-      border-right: 1px solid rgba(0,0,0,0.2);
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      cursor: pointer; transition: filter 0.15s;
-      padding: 2px 3px;
+      border-right: 1px solid rgba(0,0,0,0.15);
+      cursor: pointer; transition: filter 0.15s, opacity 0.15s;
     }
-    .gantt-block:hover { filter: brightness(1.4); z-index: 10; }
-    .gantt-block .gantt-loc { font-size: 10px; font-weight: 900; line-height: 1.1; }
-    .gantt-block .gantt-time { font-size: 8px; font-weight: 600; opacity: 0.8; line-height: 1.1; }
-    .gantt-block.work { background: rgba(0, 229, 255, 0.45); border-bottom: 3px solid var(--cyan); }
-    .gantt-block.transit { background: rgba(0, 230, 118, 0.35); border-bottom: 3px solid var(--green); }
-    .gantt-block.gap { background: rgba(255, 82, 82, 0.45); border-bottom: 3px solid var(--red); color: #fff; }
+    .gantt-block:hover { filter: brightness(1.5); z-index: 10; }
+    .gantt-block.work { background: rgba(0, 229, 255, 0.5); border-bottom: 3px solid var(--cyan); }
+    .gantt-block.transit { background: rgba(0, 230, 118, 0.4); border-bottom: 3px solid var(--green); }
+    .gantt-block.gap { background: rgba(255, 82, 82, 0.5); border-bottom: 3px solid var(--red); }
+    .gantt-block.highlight { filter: brightness(1.6); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
     
-    .gantt-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); padding: 0 4px; font-weight: 700; margin-bottom: 6px; }
+    .gantt-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); padding: 0 2px; font-weight: 700; margin-bottom: 4px; }
+
+    /* ── Vertical Timeline List ── */
+    .vtl-list { display: flex; flex-direction: column; gap: 0; margin-top: 12px; position: relative; padding-left: 18px; }
+    .vtl-list::before {
+      content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+      width: 2px; background: linear-gradient(180deg, var(--cyan), var(--purple), var(--cyan));
+      border-radius: 2px; opacity: 0.4;
+    }
+    .vtl-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 6px 0;
+      position: relative; font-size: 11px;
+      transition: background 0.15s;
+    }
+    .vtl-item:hover { background: rgba(255,255,255,0.03); border-radius: 6px; }
+    .vtl-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      margin-top: 2px; position: relative; left: -14px;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .vtl-dot.work { background: var(--cyan); color: var(--cyan); }
+    .vtl-dot.transit { background: var(--green); color: var(--green); }
+    .vtl-dot.gap { background: var(--red); color: var(--red); }
+    .vtl-time {
+      font-size: 11px; font-weight: 800; color: var(--text); min-width: 40px;
+      font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: -6px;
+    }
+    .vtl-content { flex: 1; min-width: 0; }
+    .vtl-loc {
+      font-size: 12px; font-weight: 800; color: var(--text);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .vtl-loc .vtl-badge {
+      font-size: 8px; font-weight: 800; padding: 1px 5px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .vtl-badge.work { background: rgba(0,229,255,0.15); color: var(--cyan); }
+    .vtl-badge.transit { background: rgba(0,230,118,0.15); color: var(--green); }
+    .vtl-badge.gap { background: rgba(255,82,82,0.15); color: var(--red); }
+    .vtl-detail {
+      font-size: 10px; color: var(--text-dim); font-weight: 600; margin-top: 1px;
+    }
+    .vtl-duration {
+      font-size: 10px; font-weight: 800; color: var(--text-muted); flex-shrink: 0;
+      text-align: right; min-width: 36px;
+    }
 
     /* ══════════════════════════════════════════════
        PRINT STYLES
@@ -698,27 +804,29 @@
         <div class="site-list" id="siteVisits"></div>
       </div>
 
+      <!-- Avg Travel Time -->
+      <div class="panel-section">
+        <div class="section-label">🚗 사업장 간 평균 이동시간</div>
+        <div class="avg-travel-wrap" id="avgTravelWrap"></div>
+      </div>
+
       <!-- Gantt Chart -->
       <div class="panel-section" id="ganttSection">
         <div class="section-label">⏱️ 근무 성실도 타임라인 (07:00 ~ 19:00)</div>
         <div class="gantt-wrap">
+          <!-- 색상 슬림 바 (한눈에 패턴 확인용) -->
           <div class="gantt-labels">
-            <span>07:00</span>
-            <span>09:00</span>
-            <span>11:00</span>
-            <span>13:00</span>
-            <span>15:00</span>
-            <span>17:00</span>
-            <span>19:00</span>
+            <span>07</span><span>09</span><span>11</span><span>13</span><span>15</span><span>17</span><span>19</span>
           </div>
-          <div class="gantt-row" id="ganttRow">
-            <!-- Blocks injected here -->
+          <div class="gantt-row" id="ganttRow"></div>
+          <div style="display:flex;gap:14px;font-size:9px;color:var(--text-dim);margin-top:4px;justify-content:center;font-weight:700;">
+            <span><span style="color:var(--cyan);">━━</span> 체류</span>
+            <span><span style="color:var(--green);">━━</span> 이동</span>
+            <span><span style="color:var(--red);">━━</span> 의심</span>
           </div>
-          <div style="display:flex;gap:16px;font-size:10px;color:var(--text-dim);margin-top:10px;justify-content:center;font-weight:700;">
-            <span><span style="color:var(--cyan);font-size:13px;">■</span> 체류/업무</span>
-            <span><span style="color:var(--green);font-size:13px;">■</span> 이동</span>
-            <span><span style="color:var(--red);font-size:13px;">■</span> 미소명(의심공백)</span>
-          </div>
+
+          <!-- 세로 타임라인 리스트 (상세 정보) -->
+          <div class="vtl-list" id="ganttVtl"></div>
         </div>
       </div>
 
@@ -1203,6 +1311,79 @@ function updateStats() {
         <div class="site-visits" style="color:${color}">${count}</div>
       </div>`;
   }).join('');
+
+  // ── 사업장 간 평균 이동시간 ──
+  renderAvgTravel();
+}
+
+function renderAvgTravel() {
+  const wrap = document.getElementById('avgTravelWrap');
+  if (!wrap) return;
+
+  // route별 gap_min 수집 (전체 데이터 기준 — 충분한 통계를 위해)
+  const routeStats = {};
+  allLogs.forEach(l => {
+    if (!l.from || !l.to || l.from === l.to || l.gap_min <= 0) return;
+    const key = `${l.from}→${l.to}`;
+    if (!routeStats[key]) routeStats[key] = { times: [], from: l.from, to: l.to };
+    routeStats[key].times.push(l.gap_min);
+  });
+
+  // 평균/최소/최대 계산 후 횟수 순 정렬
+  const entries = Object.entries(routeStats)
+    .map(([route, data]) => {
+      const times = data.times;
+      const avg = Math.round(times.reduce((s,v) => s+v, 0) / times.length);
+      const min = Math.min(...times);
+      const max = Math.max(...times);
+      return { route, from: data.from, to: data.to, avg, min, max, count: times.length };
+    })
+    .filter(e => e.count >= 1)
+    .sort((a,b) => b.count - a.count);
+
+  if (entries.length === 0) {
+    wrap.innerHTML = '<div class="at-empty">이동 데이터가 아직 부족합니다</div>';
+    return;
+  }
+
+  const maxCount = entries[0].count;
+
+  let html = `
+    <table class="avg-travel-table">
+      <thead>
+        <tr>
+          <th>경로</th>
+          <th>평균</th>
+          <th>범위</th>
+          <th>횟수</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  entries.slice(0, 10).forEach(e => {
+    const pct = Math.round((e.count / maxCount) * 100);
+    html += `
+        <tr onclick="highlightRoute('${e.route}')">
+          <td>
+            <div class="at-route">${e.route}</div>
+            <div class="at-bar"><div class="at-bar-fill" style="width:${pct}%"></div></div>
+          </td>
+          <td><span class="at-avg">${e.avg}</span><span style="font-size:9px;color:var(--text-dim);"> 분</span></td>
+          <td><span class="at-range">${e.min}~${e.max}분</span></td>
+          <td><span class="at-count">${e.count}회</span></td>
+        </tr>`;
+  });
+
+  html += `
+      </tbody>
+    </table>
+    <div class="at-notice">
+      💡 <strong>타 사업장 요청 시 안내 기준</strong><br>
+      위 평균 시간은 실제 이동 기록 기반으로 산출된 값입니다.<br>
+      예: "현재 <strong>SR1</strong>에 있으며, <strong>H1</strong> 요청 시 약 <strong>N분</strong> 소요 예상"
+    </div>`;
+
+  wrap.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════
@@ -1680,90 +1861,121 @@ function showToast(msg) {
 function renderGantt() {
   const gSec = document.getElementById('ganttSection');
   const gRow = document.getElementById('ganttRow');
+  const vtl = document.getElementById('ganttVtl');
   gSec.style.display = 'block';
   gRow.innerHTML = '';
+  vtl.innerHTML = '';
 
-  // 07:00 ~ 19:00 = 12시간 (720분)
-  const shiftStart = 7 * 60; // 420
-  const totalShift = 12 * 60; // 720
+  const shiftStart = 7 * 60;
+  const totalShift = 12 * 60;
+  let prevEndTime = shiftStart;
+  const minToTime = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 
-  let prevEndTime = shiftStart; 
-
-  // 현재 필터링된 로그들을 시간순 정렬
   const workerLogs = [...filteredLogs].sort((a,b) => {
     const aMin = parseInt(a.time.split(':')[0])*60 + parseInt(a.time.split(':')[1]);
     const bMin = parseInt(b.time.split(':')[0])*60 + parseInt(b.time.split(':')[1]);
     return aMin - bMin;
   });
 
+  // 이벤트 데이터 수집 (바 + 리스트 공용)
+  const events = [];
+
   workerLogs.forEach((log, idx) => {
     const arrTime = parseInt(log.time.split(':')[0])*60 + parseInt(log.time.split(':')[1]);
     if (arrTime < shiftStart || arrTime > shiftStart + totalShift) return;
 
-    // 이동 시간: 실제 gap_min이 있으면 사용, 없으면 추정 18분
     const STD_TRANSIT = log.gap_min > 0 ? Math.min(log.gap_min, 20) : 18;
-    // 체류 시간: 다음 로그까지의 시간 - 이동시간, 없으면 기본 30분
     let stayTime = 30;
     if (idx < workerLogs.length - 1) {
       const nextArr = parseInt(workerLogs[idx+1].time.split(':')[0])*60 + parseInt(workerLogs[idx+1].time.split(':')[1]);
       const nextTransit = workerLogs[idx+1].gap_min > 0 ? Math.min(workerLogs[idx+1].gap_min, 20) : 18;
       stayTime = Math.max(5, nextArr - arrTime - nextTransit);
     } else {
-      // 마지막 로그: 퇴근(19:00)까지 또는 최소 30분
       stayTime = Math.max(30, (shiftStart + totalShift) - arrTime);
     }
 
     const actualGap = arrTime - prevEndTime;
-    let gapTime = 0;
-    
-    if (actualGap > STD_TRANSIT) {
-      gapTime = actualGap - STD_TRANSIT;
-    }
+    let gapTime = actualGap > STD_TRANSIT ? actualGap - STD_TRANSIT : 0;
 
-    // 시간 포맷 헬퍼
-    const minToTime = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
-
-    // 1. 미소명 갭 (빨간색)
+    // 1. 의심공백
     if (gapTime > 0) {
+      events.push({ type: 'gap', startMin: prevEndTime, duration: gapTime, log });
       const gPct = (gapTime / totalShift) * 100;
       const gLeft = ((prevEndTime - shiftStart) / totalShift) * 100;
       const block = document.createElement('div');
       block.className = 'gantt-block gap';
-      block.style.left = gLeft + '%';
-      block.style.width = gPct + '%';
-      block.innerHTML = gapTime > 10 
-        ? `<span class="gantt-loc">${gapTime}분</span><span class="gantt-time">의심공백</span>` 
-        : '';
-      block.title = `⚠️ 의심공백: ${gapTime}분 (${minToTime(prevEndTime)} ~ ${minToTime(prevEndTime + gapTime)})`;
+      block.style.left = gLeft + '%'; block.style.width = gPct + '%';
       gRow.appendChild(block);
     }
 
-    // 2. 이동 (초록색)
+    // 2. 이동
     const transitTime = Math.min(actualGap, STD_TRANSIT);
     if (transitTime > 0) {
+      events.push({ type: 'transit', startMin: prevEndTime + gapTime, duration: transitTime, log });
       const tPct = (transitTime / totalShift) * 100;
       const tLeft = (((prevEndTime + gapTime) - shiftStart) / totalShift) * 100;
       const tBlock = document.createElement('div');
       tBlock.className = 'gantt-block transit';
-      tBlock.style.left = tLeft + '%';
-      tBlock.style.width = tPct + '%';
-      tBlock.innerHTML = transitTime > 8 ? `<span class="gantt-loc">→</span>` : '';
-      tBlock.title = `🚗 이동: ${log.from} → ${log.to} (${transitTime}분)`;
+      tBlock.style.left = tLeft + '%'; tBlock.style.width = tPct + '%';
       gRow.appendChild(tBlock);
     }
 
-    // 3. 체류/업무 (파란색)
-    const sPct = Math.min((stayTime / totalShift) * 100, ((shiftStart + totalShift - arrTime) / totalShift) * 100);
+    // 3. 체류
+    const clampedStay = Math.min(stayTime, shiftStart + totalShift - arrTime);
+    events.push({ type: 'work', startMin: arrTime, duration: clampedStay, log, stayTime });
+    const sPct = (clampedStay / totalShift) * 100;
     const sLeft = ((arrTime - shiftStart) / totalShift) * 100;
     const sBlock = document.createElement('div');
     sBlock.className = 'gantt-block work';
-    sBlock.style.left = sLeft + '%';
-    sBlock.style.width = sPct + '%';
-    sBlock.innerHTML = `<span class="gantt-loc">${log.to}</span><span class="gantt-time">${minToTime(arrTime)}</span>`;
-    sBlock.title = `📍 ${log.to} | ${minToTime(arrTime)} ~ ${minToTime(arrTime + stayTime)} (${stayTime}분 체류)`;
+    sBlock.style.left = sLeft + '%'; sBlock.style.width = sPct + '%';
     gRow.appendChild(sBlock);
 
     prevEndTime = arrTime + stayTime;
+  });
+
+  // ── 세로 타임라인 리스트 렌더링 ──
+  events.forEach((ev, i) => {
+    const item = document.createElement('div');
+    item.className = 'vtl-item';
+
+    const dot = `<div class="vtl-dot ${ev.type}"></div>`;
+    const time = minToTime(ev.startMin);
+    const dur = ev.duration;
+
+    let locText = '', detailText = '', badgeLabel = '';
+    if (ev.type === 'work') {
+      locText = ev.log.to;
+      badgeLabel = '체류';
+      detailText = `${ev.log.purpose || ''}`;
+    } else if (ev.type === 'transit') {
+      locText = `${ev.log.from} → ${ev.log.to}`;
+      badgeLabel = '이동';
+      detailText = `차량 이동`;
+    } else {
+      locText = '소명 없음';
+      badgeLabel = '의심';
+      detailText = `${minToTime(ev.startMin)} ~ ${minToTime(ev.startMin + dur)}`;
+    }
+
+    item.innerHTML = `
+      ${dot}
+      <div class="vtl-time">${time}</div>
+      <div class="vtl-content">
+        <div class="vtl-loc">${locText} <span class="vtl-badge ${ev.type}">${badgeLabel}</span></div>
+        <div class="vtl-detail">${detailText}</div>
+      </div>
+      <div class="vtl-duration">${dur}분</div>
+    `;
+
+    // 호버 시 간트 바 블록 하이라이트
+    item.addEventListener('mouseenter', () => {
+      gRow.children[i] && gRow.children[i].classList.add('highlight');
+    });
+    item.addEventListener('mouseleave', () => {
+      gRow.children[i] && gRow.children[i].classList.remove('highlight');
+    });
+
+    vtl.appendChild(item);
   });
 }
 
